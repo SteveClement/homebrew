@@ -1,25 +1,35 @@
 require 'formula'
 
 class MediaInfo < Formula
-  url 'http://downloads.sourceforge.net/sourceforge/mediainfo/MediaInfo_CLI_0.7.46_GNU_FromSource.tar.bz2'
   homepage 'http://mediainfo.sourceforge.net'
-  md5 '06ee9ebad5d450ab4058d04ea8b10850'
+  url 'http://downloads.sourceforge.net/mediainfo/MediaInfo_CLI_0.7.64_GNU_FromSource.tar.bz2'
+  version '0.7.64'
+  sha1 'fc62d911998b2fe5d2366b2c18f408d4ffd1a5ef'
 
   depends_on 'pkg-config' => :build
+  # fails to build against Leopard's older libcurl
+  depends_on 'curl' if MacOS.version < :snow_leopard
 
   def install
-    root_dir = Dir.pwd
+    cd 'ZenLib/Project/GNU/Library' do
+      system "./configure", "--disable-debug", "--disable-dependency-tracking",
+                            "--prefix=#{prefix}"
+      system "make"
+    end
 
-    Dir.chdir root_dir + '/ZenLib/Project/GNU/Library'
-    system "./configure", "--disable-debug", "--disable-dependency-tracking", "--prefix=#{prefix}"
-    system "make"
+    cd "MediaInfoLib/Project/GNU/Library" do
+      args = ["--disable-debug",
+              "--disable-dependency-tracking",
+              "--with-libcurl",
+              "--prefix=#{prefix}"]
+      system "./configure", *args
+      system "make install"
+    end
 
-    Dir.chdir root_dir + "/MediaInfoLib/Project/GNU/Library"
-    system "./configure", "--disable-debug", "--disable-dependency-tracking", "--prefix=#{prefix}"
-    system "make install"
-
-    Dir.chdir root_dir + "/MediaInfo/Project/GNU/CLI"
-    system "./configure", "--disable-debug", "--disable-dependency-tracking", "--prefix=#{prefix}"
-    system "make install"
+    cd "MediaInfo/Project/GNU/CLI" do
+      system "./configure", "--disable-debug", "--disable-dependency-tracking",
+                            "--prefix=#{prefix}"
+      system "make install"
+    end
   end
 end

@@ -1,12 +1,12 @@
 HOMEBREW_HELP = <<-EOS
 Example usage:
+  brew [info | home | options ] [FORMULA...]
   brew install FORMULA...
   brew uninstall FORMULA...
   brew search [foo]
   brew list [FORMULA...]
   brew update
-  brew outdated
-  brew [info | home] [FORMULA...]
+  brew upgrade [FORMULA...]
 
 Troubleshooting:
   brew doctor

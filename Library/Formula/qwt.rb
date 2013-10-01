@@ -1,9 +1,9 @@
 require 'formula'
 
 class Qwt < Formula
-  url 'http://sourceforge.net/projects/qwt/files/qwt/6.0.1/qwt-6.0.1.tar.bz2'
   homepage 'http://qwt.sourceforge.net/'
-  md5 'ace68558eab873e2da7e641179c4ef0c'
+  url 'http://downloads.sourceforge.net/project/qwt/qwt/6.1.0/qwt-6.1.0.tar.bz2'
+  sha1 '48a967038f7aa9a9c87c64bcb2eb07c5df375565'
 
   depends_on 'qt'
 
@@ -13,7 +13,14 @@ class Qwt < Formula
       s.gsub! /^\s*QWT_INSTALL_PREFIX\s*=(.*)$/, "QWT_INSTALL_PREFIX=#{prefix}"
     end
 
-    system "qmake -config release"
+    system "qmake -spec macx-g++ -config release"
+    system "make"
     system "make install"
+  end
+
+  def caveats; <<-EOS.undent
+      The qwtmathml library contains code of the MML Widget from the Qt solutions package.
+      Beside the Qwt license you also have to take care of its license.
+    EOS
   end
 end

@@ -1,28 +1,50 @@
 require 'formula'
 
 class Binutils < Formula
-  url 'http://ftp.gnu.org/gnu/binutils/binutils-2.21.tar.gz'
   homepage 'http://www.gnu.org/software/binutils/binutils.html'
-  md5 'f11e10f312a58d82f14bf571dd9ff91c'
+  url 'http://ftpmirror.gnu.org/binutils/binutils-2.23.2.tar.gz'
+  mirror 'http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.gz'
+  sha1 'c3fb8bab921678b3e40a14e648c89d24b1d6efec'
 
-  def options
-    [['--default-names', "Do NOT prepend 'g' to the binary; will override system utils."]]
+  # Fix compilation with clang. Reported upstream:
+  # http://sourceware.org/bugzilla/show_bug.cgi?id=15728
+  def patches
+    DATA
   end
 
   def install
-    args = ["--disable-debug", "--disable-dependency-tracking",
-            "--prefix=#{prefix}",
-            "--infodir=#{info}",
-            "--mandir=#{man}",
-            "--disable-werror",
-            "--enable-interwork",
-            "--enable-multilib",
-            "--enable-targets=x86_64-elf",
-            "--enable-targets=arm-none-eabi"]
-    args << "--program-prefix=g" unless ARGV.include? '--default-names'
-
-    system "./configure", *args
+    system "./configure", "--disable-debug",
+                          "--disable-dependency-tracking",
+                          "--program-prefix=g",
+                          "--prefix=#{prefix}",
+                          "--infodir=#{info}",
+                          "--mandir=#{man}",
+                          "--disable-werror",
+                          "--enable-interwork",
+                          "--enable-multilib",
+                          "--enable-64-bit-bfd",
+                          "--enable-targets=all"
     system "make"
     system "make install"
   end
 end
+
+__END__
+--- a/include/cgen/basic-ops.h	2009-10-23 18:17:08.000000000 -0600
++++ b/include/cgen/basic-ops.h	2013-07-10 14:21:44.000000000 -0600
+@@ -295,11 +295,11 @@
+    significant and word number 0 is the most significant word.
+    ??? May also wish an endian-dependent version.  Later.  */
+ 
+-QI SUBWORDSIQI (SI, int);
+-HI SUBWORDSIHI (SI, int);
+-QI SUBWORDDIQI (DI, int);
+-HI SUBWORDDIHI (DI, int);
+-SI SUBWORDDISI (DI, int);
++static QI SUBWORDSIQI (SI, int);
++static HI SUBWORDSIHI (SI, int);
++static QI SUBWORDDIQI (DI, int);
++static HI SUBWORDDIHI (DI, int);
++static SI SUBWORDDISI (DI, int);
+ 
+ #ifdef SEMOPS_DEFINE_INLINE

@@ -1,30 +1,26 @@
 require 'formula'
 
 class Znc < Formula
-  url 'http://znc.in/releases/archive/znc-0.098.tar.gz'
-  md5 '5667b4acb1f01309d6eded77abac700c'
-  homepage 'http://en.znc.in/wiki/ZNC'
-  head 'https://github.com/znc/znc.git'
+  homepage 'http://wiki.znc.in/ZNC'
+  url 'http://znc.in/releases/archive/znc-1.0.tar.gz'
+  sha1 '50e6e3aacb67cf0a63d77f5031d4b75264cee294'
 
-  depends_on 'pkg-config' => :build
-  depends_on 'c-ares' => :optional
+  head do
+    url 'https://github.com/znc/znc.git'
 
-  skip_clean 'bin/znc'
-  skip_clean 'bin/znc-config'
-  skip_clean 'bin/znc-buildmod'
-
-  def options
-    [['--enable-debug', "Compile ZNC with --enable-debug"]]
+    depends_on :automake
+    depends_on :libtool
   end
 
-  def install
-    if ARGV.build_head?
-      ENV['ACLOCAL_FLAGS'] = "--acdir=#{HOMEBREW_PREFIX}/share/aclocal"
-      system "./autogen.sh"
-    end
+  option 'enable-debug', "Compile ZNC with --enable-debug"
 
-    args = ["--prefix=#{prefix}", "--enable-extra"]
-    args << "--enable-debug" if ARGV.include? '--enable-debug'
+  depends_on 'pkg-config' => :build
+
+  def install
+    args = ["--prefix=#{prefix}"]
+    args << "--enable-debug" if build.include? 'enable-debug'
+
+    system "./autogen.sh" if build.head?
     system "./configure", *args
     system "make install"
   end

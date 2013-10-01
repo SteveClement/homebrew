@@ -1,16 +1,15 @@
 require 'formula'
 
 class Openexr < Formula
-  url 'http://download.savannah.gnu.org/releases/openexr/openexr-1.6.1.tar.gz'
   homepage 'http://www.openexr.com/'
-  md5 '11951f164f9c872b183df75e66de145a'
+  url 'http://download.savannah.gnu.org/releases/openexr/openexr-2.0.1.tar.gz'
+  sha1 '22589e11d090a01b5c3117e7e0b7bbb8301184b6'
+
+  # included for reference only - repository doesn't have 'configure' script
+  # head 'cvs://:pserver:anonymous@cvs.sv.gnu.org:/sources/openexr:OpenEXR'
 
   depends_on 'pkg-config' => :build
   depends_on 'ilmbase'
-
-  def patches
-    DATA
-  end
 
   def install
     system "./configure", "--disable-debug", "--disable-dependency-tracking",
@@ -19,14 +18,3 @@ class Openexr < Formula
   end
 end
 
-__END__
---- a/configure
-+++ b/configure
-@@ -21504,7 +21504,7 @@ Please re-run configure with these options:
-     CXXFLAGS="$CXXFLAGS -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386"
-       fi
- 
--  CXXFLAGS="$CXXFLAGS -Wno-long-double"
-+  CXXFLAGS="$CXXFLAGS"
-   ;;
- esac

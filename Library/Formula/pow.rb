@@ -1,24 +1,19 @@
 require 'formula'
 
 class Pow < Formula
-  url 'http://get.pow.cx/versions/0.3.1.tar.gz'
   homepage 'http://pow.cx/'
-  md5 '2eff3e7a048aada38a85cad5e73a936a'
+  url 'http://get.pow.cx/versions/0.4.1.tar.gz'
+  sha1 '46976c6eea914ec78ba424b919e8928e4fc9a6bf'
 
   depends_on 'node'
 
   def install
-    (prefix+'pow').install Dir['*']
-
-    bin.mkdir
-    File.open("#{bin}/pow", 'w') do |f|
-      f.write <<-EOS.undent
-        #!/bin/sh
-        export POW_BIN="#{HOMEBREW_PREFIX}/bin/pow"
-        exec "#{HOMEBREW_PREFIX}/bin/node" "#{prefix}/pow/lib/command.js" "$@"
-      EOS
-    end
-    system "chmod +x #{bin}/pow"
+    libexec.install Dir['*']
+    (bin/'pow').write <<-EOS.undent
+      #!/bin/sh
+      export POW_BIN="#{HOMEBREW_PREFIX}/bin/pow"
+      exec "#{HOMEBREW_PREFIX}/bin/node" "#{libexec}/lib/command.js" "$@"
+    EOS
   end
 
   def caveats;
@@ -29,6 +24,9 @@ class Pow < Formula
       Installs launchd agent to start on login:
         pow --install-local
 
+      Enables both launchd agents:
+        sudo launchctl load -w /Library/LaunchDaemons/cx.pow.firewall.plist
+        launchctl load -w ~/Library/LaunchAgents/cx.pow.powd.plist
     EOS
   end
 end

@@ -1,19 +1,22 @@
 require 'formula'
 
 class Rock < Formula
-  url 'https://github.com/downloads/nddrylliog/rock/rock-0.9.1-source.tar.bz2'
   homepage 'http://ooc-lang.org'
-  md5 '66c35a7d9271732790f08a4839cee287'
+  url 'https://github.com/nddrylliog/rock/archive/v0.9.6.tar.gz'
+  sha1 'c92bda98b94026fd493b1b0e46db62dc69459848'
+
   head 'https://github.com/nddrylliog/rock.git'
+
+  depends_on 'bdw-gc'
 
   def install
       # make rock using provided bootstrap
-      system "make"
+      system "make rescue"
       bin.install 'bin/rock'
       man1.install "docs/rock.1"
 
       # install misc authorship files & rock binary in place
       # copy the sdk, libs and docs
-      prefix.install ['rock.use', 'README.rst', "sdk", "libs", "docs"]
+      prefix.install "rock.use", 'README.md', "sdk", "libs", "docs"
   end
 end

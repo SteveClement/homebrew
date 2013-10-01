@@ -1,18 +1,18 @@
 require 'formula'
 
 class Siege < Formula
-  url "http://www.joedog.org/pub/siege/siege-2.70.tar.gz"
   homepage 'http://www.joedog.org/index/siege-home'
-  sha1 'ee0a0c3a9e6559cf8cbaf717649f6684b0d9643a'
+  url "http://www.joedog.org/pub/siege/siege-3.0.3.tar.gz"
+  sha1 'd50cccf28046cbbe5d809f42429358ff0d05ef1c'
 
   def install
     # To avoid unnecessary warning due to hardcoded path, create the folder first
     (prefix+'etc').mkdir
-    system  "./configure",
-            "--prefix=#{prefix}",
-            "--mandir=#{man}",
-            "--localstatedir=#{var}",
-            "--with-ssl"
+    system "./configure", "--disable-dependency-tracking",
+                          "--prefix=#{prefix}",
+                          "--mandir=#{man}",
+                          "--localstatedir=#{var}",
+                          "--with-ssl"
     system "make install"
   end
 
@@ -33,4 +33,3 @@ class Siege < Formula
     EOS
   end
 end
-

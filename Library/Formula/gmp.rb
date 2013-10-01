@@ -1,41 +1,34 @@
 require 'formula'
 
 class Gmp < Formula
-  url 'ftp://ftp.gnu.org/gnu/gmp/gmp-5.0.2.tar.bz2'
   homepage 'http://gmplib.org/'
-  sha1 '2968220e1988eabb61f921d11e5d2db5431e0a35'
+  url 'ftp://ftp.gmplib.org/pub/gmp-5.1.2/gmp-5.1.2.tar.bz2'
+  mirror 'http://ftp.gnu.org/gnu/gmp/gmp-5.1.2.tar.bz2'
+  sha1 '2cb498322b9be4713829d94dee944259c017d615'
 
-  def options
-    [
-      ["--32-bit", "Force 32-bit."],
-      ["--skip-check", "Do not run 'make check' to verify libraries."]
-    ]
+  bottle do
+    cellar :any
+    sha1 '65dc7505fe80c1ac3fd502a2bfdc09fcfa40a66e' => :mountain_lion
+    sha1 '186c0b5627fc0af1114d9bea543dc19bd657df0c' => :lion
+    sha1 '2eba2244894e5558bc6a2bdf9cc20613c16f0065' => :snow_leopard
   end
 
-  def install
-    # Reports of problems using gcc 4.0 on Leopard
-    # https://github.com/mxcl/homebrew/issues/issue/2302
-    # Also force use of 4.2 on 10.6 in case a user has changed the default
-    ENV.gcc_4_2
+  option '32-bit'
 
+  def install
     args = ["--prefix=#{prefix}", "--enable-cxx"]
 
-    # Build 32-bit where appropriate, and help configure find 64-bit CPUs
-    if MacOS.prefer_64_bit? and not ARGV.include? "--32-bit"
-      ENV.m64
-      args << "--build=x86_64-apple-darwin"
-    else
+    if build.build_32_bit?
       ENV.m32
-      args << "--host=none-apple-darwin"
+      ENV.append 'ABI', '32'
+      # https://github.com/mxcl/homebrew/issues/20693
+      args << "--disable-assembly"
     end
 
     system "./configure", *args
     system "make"
-    ENV.j1 # Doesn't install in parallel on 8-core Mac Pro
+    system "make check"
+    ENV.deparallelize
     system "make install"
-
-    # Different compilers and options can cause tests to fail even
-    # if everything compiles, so yes, we want to do this step.
-    system "make check" unless ARGV.include? "--skip-check"
   end
 end

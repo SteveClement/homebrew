@@ -1,14 +1,14 @@
 require 'formula'
 
 class Libewf < Formula
-  url 'http://downloads.sourceforge.net/project/libewf/libewf/libewf-20100226/libewf-20100226.tar.gz'
-  homepage 'http://sourceforge.net/projects/libewf/'
-  md5 'a697d629bb74df1fa68f22658634fdb9'
+  homepage 'http://code.google.com/p/libewf/'
+  url 'https://googledrive.com/host/0B3fBvzttpiiSMTdoaVExWWNsRjg/libewf-20130416.tar.gz'
+  sha1 'b455412299fd15e7a4f1be670d886f99350bdae4'
+
+  # env :std
 
   def install
-    ENV['LIBTOOLIZE'] = "/usr/bin/glibtoolize"
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
+    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
     system "make install"
   end
 end

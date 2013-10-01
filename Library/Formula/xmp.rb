@@ -1,19 +1,37 @@
 require 'formula'
 
 class Xmp < Formula
-  url 'http://downloads.sourceforge.net/project/xmp/xmp/3.4.0/xmp-3.4.0.tar.gz'
   homepage 'http://xmp.sourceforge.net'
-  md5 '8d18f1340e46278f7006c4d6df385e4b'
+  url 'http://downloads.sourceforge.net/project/xmp/xmp/4.0.6/xmp-4.0.6.tar.gz'
+  sha1 '61a7d68e4c37e7407bd35c783821bfbc2b639c87'
 
-  def patches
-    # fixes compilation error with GCC 4.2
-    # can be removed in the next release
-    # http://sourceforge.net/mailarchive/message.php?msg_id=27928353
-    "http://downloads.sourceforge.net/project/xmp/xmp/3.4.0/xmp-3.4.0-ununsed-but-set-variable-gcc-warning.patch"
+  head do
+    url 'git://git.code.sf.net/p/xmp/xmp-cli'
+
+    depends_on 'autoconf' => :build
+    depends_on 'automake' => :build
+    depends_on 'libtool'  => :build
   end
 
+  depends_on 'pkg-config' => :build
+  depends_on 'libxmp'
+
   def install
+    if build.head?
+      system "glibtoolize"
+      system "aclocal"
+      system "autoconf"
+      system "automake", "--add-missing"
+    end
+
     system "./configure", "--prefix=#{prefix}"
     system "make install"
+
+    # install the included demo song
+    share.install "ub-name.it" unless build.head?
+  end
+
+  def test
+    system "#{bin}/xmp", "--load-only", share/"ub-name.it"
   end
 end

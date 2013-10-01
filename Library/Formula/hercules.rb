@@ -1,9 +1,9 @@
 require 'formula'
 
 class Hercules < Formula
-  url 'http://www.hercules-390.org/hercules-3.07.tar.gz'
-  homepage 'http://www.hercules-390.org/'
-  md5 'a12aa1645b0695b25b7fc0c9a3ccab3a'
+  homepage 'http://www.hercules-390.eu/'
+  url 'http://downloads.hercules-390.eu/hercules-3.09.tar.gz'
+  sha1 '5cbe89ec214de00b90e3077c27db636a7d2607f5'
 
   depends_on 'gawk'
 

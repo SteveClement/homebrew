@@ -1,30 +1,14 @@
 require 'formula'
 
 class Ilmbase < Formula
-  url 'http://download.savannah.gnu.org/releases/openexr/ilmbase-1.0.1.tar.gz'
   homepage 'http://www.openexr.com/'
-  md5 'f76f094e69a6079b0beb93d97e2a217e'
-
-  def patches
-    DATA
-  end
+  url 'http://download.savannah.gnu.org/releases/openexr/ilmbase-2.0.1.tar.gz'
+  sha1 'bfa62519094413f686c6f08c5923b47a10eea180'
 
   def install
-    system "./configure", "--prefix=#{prefix}", "--disable-debug", "--disable-dependency-tracking"
+    system "./configure", "--disable-debug", "--disable-dependency-tracking",
+                          "--prefix=#{prefix}"
     system "make install"
   end
 end
-
-__END__
---- a/configure
-+++ b/configure
-@@ -21049,7 +21049,7 @@ Please re-run configure with these options:
-     CXXFLAGS="$CXXFLAGS -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386"
-       fi
- 
--  CXXFLAGS="$CXXFLAGS -Wno-long-double"
-+  CXXFLAGS="$CXXFLAGS"
-   ;;
- esac
- 
 

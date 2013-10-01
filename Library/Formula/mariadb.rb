@@ -1,91 +1,133 @@
 require 'formula'
 
 class Mariadb < Formula
-  # You probably don't want to have this and MySQL's formula linked at the same time
-  # Just saying.
-  url 'http://ftp.osuosl.org/pub/mariadb/mariadb-5.2.7/kvm-tarbake-jaunty-x86/mariadb-5.2.7.tar.gz'
   homepage 'http://mariadb.org/'
-  md5 '06b9b102946a3606b38348c0ebf18367'
+  url 'http://ftp.osuosl.org/pub/mariadb/mariadb-5.5.32/kvm-tarbake-jaunty-x86/mariadb-5.5.32.tar.gz'
+  sha1 'cc468beebf3b27439d29635a4e8aec8314f27175'
 
-  depends_on 'readline'
+  devel do
+    url 'http://ftp.osuosl.org/pub/mariadb/mariadb-10.0.3/kvm-tarbake-jaunty-x86/mariadb-10.0.3.tar.gz'
+    sha1 'c36c03ad78bdadf9a10e7b695159857d6432726d'
+  end
 
-  def options
-    [
-      ['--with-tests', "Keep tests when installing."],
-      ['--with-bench', "Keep benchmark app when installing."],
-      ['--client-only', "Only install client tools, not the server."],
-      ['--universal', "Make mariadb a universal binary"]
-    ]
+  depends_on 'cmake' => :build
+  depends_on 'pidof' unless MacOS.version >= :mountain_lion
+
+  option :universal
+  option 'with-tests', 'Keep test when installing'
+  option 'with-bench', 'Keep benchmark app when installing'
+  option 'with-embedded', 'Build the embedded server'
+  option 'with-libedit', 'Compile with editline wrapper instead of readline'
+  option 'with-archive-storage-engine', 'Compile with the ARCHIVE storage engine enabled'
+  option 'with-blackhole-storage-engine', 'Compile with the BLACKHOLE storage engine enabled'
+  option 'enable-local-infile', 'Build with local infile loading support'
+
+  conflicts_with 'mysql', 'mysql-cluster', 'percona-server',
+    :because => "mariadb, mysql, and percona install the same binaries."
+
+  env :std if build.universal?
+
+  fails_with :clang do
+    build 500
+    cause "error: implicit instantiation of undefined template 'boost::STATIC_ASSERTION_FAILURE<false>'"
   end
 
   def install
-    ENV['CXXFLAGS'] = ENV['CXXFLAGS'].gsub "-fomit-frame-pointer", ""
-    ENV['CXXFLAGS'] += " -O3 -fno-omit-frame-pointer -felide-constructors"
+    # Don't hard-code the libtool path. See:
+    # https://github.com/mxcl/homebrew/issues/20185
+    inreplace "cmake/libutils.cmake",
+      "COMMAND /usr/bin/libtool -static -o ${TARGET_LOCATION}",
+      "COMMAND libtool -static -o ${TARGET_LOCATION}"
 
-    # Make universal for bindings to universal applications
-    ENV.universal_binary if ARGV.build_universal?
+    # Build without compiler or CPU specific optimization flags to facilitate
+    # compilation of gems and other software that queries `mysql-config`.
+    ENV.minimal_optimization
 
-    configure_args = [
-      "--without-docs",
-      "--without-debug",
-      "--disable-dependency-tracking",
-      "--prefix=#{prefix}",
-      "--localstatedir=#{var}/mysql",
-      "--sysconfdir=#{etc}",
-      "--with-extra-charsets=complex",
-      "--without-readline",
-      "--enable-assembler",
-      "--enable-thread-safe-client",
-      "--with-big-tables",
-      "--with-plugin-aria",
-      "--with-aria-tmp-tables",
-      "--without-plugin-innodb_plugin",
-      "--with-mysqld-ldflags=-static",
-      "--with-client-ldflags=-static",
-      "--with-plugins=max-no-ndb",
-      "--with-embedded-server",
-      "--with-libevent",
+    cmake_args = %W[
+      .
+      -DCMAKE_INSTALL_PREFIX=#{prefix}
+      -DMYSQL_DATADIR=#{var}/mysql
+      -DINSTALL_MANDIR=#{man}
+      -DINSTALL_DOCDIR=#{doc}
+      -DINSTALL_MYSQLSHAREDIR=#{share.basename}/mysql
+      -DWITH_SSL=yes
+      -DDEFAULT_CHARSET=utf8
+      -DDEFAULT_COLLATION=utf8_general_ci
+      -DINSTALL_SYSCONFDIR=#{etc}
     ]
 
-    configure_args << "--without-server" if ARGV.include? '--client-only'
+    # Build the embedded server
+    cmake_args << "-DWITH_EMBEDDED_SERVER=ON" if build.include? 'with-embedded'
 
-    system "./configure", *configure_args
+    # Compile with readline unless libedit is explicitly chosen
+    cmake_args << "-DWITH_READLINE=yes" unless build.include? 'with-libedit'
+
+    # Compile with ARCHIVE engine enabled if chosen
+    cmake_args << "-DWITH_ARCHIVE_STORAGE_ENGINE=1" if build.include? 'with-archive-storage-engine'
+
+    # Compile with BLACKHOLE engine enabled if chosen
+    cmake_args << "-DWITH_BLACKHOLE_STORAGE_ENGINE=1" if build.include? 'with-blackhole-storage-engine'
+
+    # Make universal for binding to universal applications
+    cmake_args << "-DCMAKE_OSX_ARCHITECTURES='#{Hardware::CPU.universal_archs.as_cmake_arch_flags}'" if build.universal?
+
+    # Build with local infile loading support
+    cmake_args << "-DENABLED_LOCAL_INFILE=1" if build.include? 'enable-local-infile'
+
+    system "cmake", *cmake_args
+    system "make"
     system "make install"
 
-    ln_s "#{libexec}/mysqld", bin
-    ln_s "#{share}/mysql/mysql.server", bin
+    # Fix my.cnf to point to #{etc} instead of /etc
+    inreplace "#{etc}/my.cnf" do |s|
+      s.gsub!("!includedir /etc/my.cnf.d", "!includedir #{etc}/my.cnf.d")
+    end
 
-    (prefix+'mysql-test').rmtree unless ARGV.include? '--with-tests' # save 121MB!
-    (prefix+'sql-bench').rmtree unless ARGV.include? '--with-bench'
+    unless build.include? 'client-only'
+      # Don't create databases inside of the prefix!
+      # See: https://github.com/mxcl/homebrew/issues/4975
+      rm_rf prefix+'data'
 
-    (prefix+'com.mysql.mysqld.plist').write startup_plist
+      (prefix+'mysql-test').rmtree unless build.include? 'with-tests' # save 121MB!
+      (prefix+'sql-bench').rmtree unless build.include? 'with-bench'
+
+      # Link the setup script into bin
+      ln_s prefix+'scripts/mysql_install_db', bin+'mysql_install_db'
+
+      # Fix up the control script and link into bin
+      inreplace "#{prefix}/support-files/mysql.server" do |s|
+        s.gsub!(/^(PATH=".*)(")/, "\\1:#{HOMEBREW_PREFIX}/bin\\2")
+        # pidof can be replaced with pgrep from proctools on Mountain Lion
+        s.gsub!(/pidof/, 'pgrep') if MacOS.version >= :mountain_lion
+      end
+
+      ln_s "#{prefix}/support-files/mysql.server", bin
+    end
+  end
+
+  def post_install
+    # Make sure the var/mysql directory exists
+    (var+"mysql").mkpath
+
+    unless File.exist? "#{var}/mysql/mysql/user.frm"
+      ENV['TMPDIR'] = nil
+      system "#{bin}/mysql_install_db", '--verbose', "--user=#{ENV['USER']}",
+        "--basedir=#{prefix}", "--datadir=#{var}/mysql", "--tmpdir=/tmp"
+    end
   end
 
   def caveats; <<-EOS.undent
-    Set up databases with:
-        unset TMPDIR
-        mysql_install_db
+    A "/etc/my.cnf" from another install may interfere with a Homebrew-built
+    server starting up correctly.
 
-    If this is your first install, automatically load on login with:
-        cp #{prefix}/com.mysql.mysqld.plist ~/Library/LaunchAgents
-        launchctl load -w ~/Library/LaunchAgents/com.mysql.mysqld.plist
-
-    If this is an upgrade and you already have the com.mysql.mysqld.plist loaded:
-        launchctl unload -w ~/Library/LaunchAgents/com.mysql.mysqld.plist
-        cp #{prefix}/com.mysql.mysqld.plist ~/Library/LaunchAgents
-        launchctl load -w ~/Library/LaunchAgents/com.mysql.mysqld.plist
-
-    Note on upgrading:
-        We overwrite any existing com.mysql.mysqld.plist in ~/Library/LaunchAgents
-        if we are upgrading because previous versions of this brew created the
-        plist with a version specific program argument.
-
-    Or start manually with:
-        mysql.server start
+    To connect:
+        mysql -uroot
     EOS
   end
 
-  def startup_plist; <<-EOPLIST.undent
+  plist_options :manual => "mysql.server start"
+
+  def plist; <<-EOS.undent
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
     <plist version="1.0">
@@ -93,17 +135,24 @@ class Mariadb < Formula
       <key>KeepAlive</key>
       <true/>
       <key>Label</key>
-      <string>com.mysql.mysqld</string>
-      <key>Program</key>
-      <string>#{bin}/mysqld_safe</string>
+      <string>#{plist_name}</string>
+      <key>ProgramArguments</key>
+      <array>
+        <string>#{opt_prefix}/bin/mysqld_safe</string>
+        <string>--bind-address=127.0.0.1</string>
+      </array>
       <key>RunAtLoad</key>
       <true/>
-      <key>UserName</key>
-      <string>#{`whoami`.chomp}</string>
       <key>WorkingDirectory</key>
       <string>#{var}</string>
     </dict>
     </plist>
-    EOPLIST
+    EOS
+  end
+
+  test do
+    (prefix+'mysql-test').cd do
+      system './mysql-test-run.pl', 'status'
+    end
   end
 end

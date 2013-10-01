@@ -1,140 +1,108 @@
 require 'formula'
-require 'hardware'
 
 class Mongodb < Formula
   homepage 'http://www.mongodb.org/'
+  url 'http://downloads.mongodb.org/src/mongodb-src-r2.4.6.tar.gz'
+  sha1 '32066d405f3bed175c9433dc4ac455c2e0091b53'
 
-  packages = {
-    :x86_64 => {
-      :url => 'http://fastdl.mongodb.org/osx/mongodb-osx-x86_64-1.8.2.tgz',
-      :md5 => '71acdb8fdd24cb8179b5436169e80912',
-      :version => '1.8.2-x86_64'
-    },
-    :i386 => {
-      :url => 'http://fastdl.mongodb.org/osx/mongodb-osx-i386-1.8.2.tgz',
-      :md5 => '3cbe62979413058d5dac0ef20afbb70d',
-      :version => '1.8.2-i386'
-    }
-  }
-
-  package = (Hardware.is_64_bit? and not ARGV.include? '--32bit') ? packages[:x86_64] : packages[:i386]
-
-  url     package[:url]
-  md5     package[:md5]
-  version package[:version]
-
-  skip_clean :all
-
-  def options
-    [
-        ['--32bit', 'Override arch detection and install the 32-bit version.'],
-        ['--nojournal', 'Disable write-ahead logging (Journaling)'],
-        ['--rest', 'Enable the REST Interface on the HTTP Status Page'],
-    ]
+  devel do
+    url 'http://downloads.mongodb.org/src/mongodb-src-r2.5.2.tar.gz'
+    sha1 'e6b0aa35ea78e6bf9d7791a04810a4db4d69decc'
   end
+
+  head 'https://github.com/mongodb/mongo.git'
+
+  bottle do
+    revision 1
+    sha1 '323566c3738d80a437bae63f294c44e7548ae758' => :mountain_lion
+    sha1 'fbe4d599ae992c6b863c96da6da3b45446bdc0cf' => :lion
+    sha1 'b4d7e33054b9daef2504bcdb8f26ef43dbea6aaf' => :snow_leopard
+  end
+
+  depends_on 'scons' => :build
+  depends_on 'openssl' => :optional
 
   def install
-    # Copy the prebuilt binaries to prefix
-    prefix.install Dir['*']
+    args = ["--prefix=#{prefix}", "-j#{ENV.make_jobs}"]
+    args << '--64' if MacOS.prefer_64_bit?
 
-    # Create the data and log directories under /var
-    (var+'mongodb').mkpath
-    (var+'log/mongodb').mkpath
-
-    # Write the configuration files and launchd script
-    (prefix+'mongod.conf').write mongodb_conf
-    (prefix+'org.mongodb.mongod.plist').write startup_plist
-  end
-
-  def caveats
-    s = ""
-    s += <<-EOS.undent
-    If this is your first install, automatically load on login with:
-        mkdir -p ~/Library/LaunchAgents
-        cp #{prefix}/org.mongodb.mongod.plist ~/Library/LaunchAgents/
-        launchctl load -w ~/Library/LaunchAgents/org.mongodb.mongod.plist
-
-    If this is an upgrade and you already have the org.mongodb.mongod.plist loaded:
-        launchctl unload -w ~/Library/LaunchAgents/org.mongodb.mongod.plist
-        cp #{prefix}/org.mongodb.mongod.plist ~/Library/LaunchAgents/
-        launchctl load -w ~/Library/LaunchAgents/org.mongodb.mongod.plist
-
-    Or start it manually:
-        mongod run --config #{prefix}/mongod.conf
-    EOS
-
-    if ARGV.include? "--nojournal"
-        s += ""
-        s += <<-EOS.undent
-        Write Ahead logging (Journaling) has been disabled.
-        EOS
-    else
-        s += ""
-        s += <<-EOS.undent
-        MongoDB 1.8+ includes a feature for Write Ahead Logging (Journaling), which has been enabled by default.
-        This is not the default in production (Journaling is disabled); to disable journaling, use --nojournal.
-        EOS
+    if build.with? 'openssl'
+      args << '--ssl'
+      args << "--extrapathdyn=#{Formula.factory('openssl').opt_prefix}"
     end
 
-    return s
+    system 'scons', 'install', *args
+
+    (prefix+'mongod.conf').write mongodb_conf
+
+    mv bin/'mongod', prefix
+    (bin/'mongod').write <<-EOS.undent
+      #!/usr/bin/env ruby
+      ARGV << '--config' << '#{etc}/mongod.conf' unless ARGV.find { |arg|
+        arg =~ /^\s*\-\-config$/ or arg =~ /^\s*\-f$/
+      }
+      exec "#{prefix}/mongod", *ARGV
+    EOS
   end
 
-  def mongodb_conf
-    conf = ""
-    conf += <<-EOS.undent
+  def post_install
+    (var+'mongodb').mkpath
+    (var+'log/mongodb').mkpath
+    etc.mkpath
+    cp prefix+'mongod.conf', etc+"mongod.conf" unless File.exists? etc+"mongod.conf"
+  end
+
+  def mongodb_conf; <<-EOS.undent
     # Store data in #{var}/mongodb instead of the default /data/db
     dbpath = #{var}/mongodb
+
+    # Append logs to #{var}/log/mongodb/mongo.log
+    logpath = #{var}/log/mongodb/mongo.log
+    logappend = true
 
     # Only accept local connections
     bind_ip = 127.0.0.1
     EOS
-
-    if !ARGV.include? '--nojournal'
-        conf += <<-EOS.undent
-        # Enable Write Ahead Logging (not enabled by default in production deployments)
-        journal = true
-        EOS
-    end
-
-    if ARGV.include? '--rest'
-        conf += <<-EOS.undent
-        # Enable the REST interface on the HTTP Console (startup port + 1000)
-        rest = true
-        EOS
-    end
-
-    return conf
   end
 
-  def startup_plist
-    return <<-EOS
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key>
-  <string>org.mongodb.mongod</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>#{bin}/mongod</string>
-    <string>run</string>
-    <string>--config</string>
-    <string>#{prefix}/mongod.conf</string>
-  </array>
-  <key>RunAtLoad</key>
-  <true/>
-  <key>KeepAlive</key>
-  <false/>
-  <key>UserName</key>
-  <string>#{`whoami`.chomp}</string>
-  <key>WorkingDirectory</key>
-  <string>#{HOMEBREW_PREFIX}</string>
-  <key>StandardErrorPath</key>
-  <string>#{var}/log/mongodb/output.log</string>
-  <key>StandardOutPath</key>
-  <string>#{var}/log/mongodb/output.log</string>
-</dict>
-</plist>
-EOS
+  plist_options :manual => "mongod"
+
+  def plist; <<-EOS.undent
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>Label</key>
+      <string>#{plist_name}</string>
+      <key>ProgramArguments</key>
+      <array>
+        <string>#{opt_prefix}/mongod</string>
+        <string>run</string>
+        <string>--config</string>
+        <string>#{etc}/mongod.conf</string>
+      </array>
+      <key>RunAtLoad</key>
+      <true/>
+      <key>KeepAlive</key>
+      <false/>
+      <key>WorkingDirectory</key>
+      <string>#{HOMEBREW_PREFIX}</string>
+      <key>StandardErrorPath</key>
+      <string>#{var}/log/mongodb/output.log</string>
+      <key>StandardOutPath</key>
+      <string>#{var}/log/mongodb/output.log</string>
+      <key>HardResourceLimits</key>
+      <dict>
+        <key>NumberOfFiles</key>
+        <integer>1024</integer>
+      </dict>
+      <key>SoftResourceLimits</key>
+      <dict>
+        <key>NumberOfFiles</key>
+        <integer>1024</integer>
+      </dict>
+    </dict>
+    </plist>
+    EOS
   end
 end

@@ -1,47 +1,58 @@
 require 'formula'
 
-class Cmake < Formula
-  url 'http://www.cmake.org/files/v2.8/cmake-2.8.5.tar.gz'
-  md5 '3c5d32cec0f4c2dc45f4c2e84f4a20c5'
-  homepage 'http://www.cmake.org/'
-
-  def patches
-    # CMake 2.8.5 fails to find some Qt libraries that CMake 2.8.4 could find.
-    # The following patch corrects this behavior. See discussion on the CMake
-    # mailing list:
-    #
-    #   http://cmake.3232098.n2.nabble.com/FindQt4-errors-out-when-locating-QtUITools-under-CMake-2-8-5-td6619091.html
-    #
-    # Patch can be removed after next CMake release.
-    {:p1 => "http://cmake.org/gitweb?p=cmake.git;a=patch;h=702538eaa3315f3fcad9f1daea01e6a83928967b"}
+class NoExpatFramework < Requirement
+  def expat_framework
+    '/Library/Frameworks/expat.framework'
   end
 
+  satisfy :build_env => false do
+    not File.exist? expat_framework
+  end
+
+  def message; <<-EOS.undent
+    Detected #{expat_framework}
+
+    This will be picked up by CMake's build system and likely cause the
+    build to fail, trying to link to a 32-bit version of expat.
+
+    You may need to move this file out of the way to compile CMake.
+    EOS
+  end
+end
+
+class Cmake < Formula
+  homepage 'http://www.cmake.org/'
+  url 'http://www.cmake.org/files/v2.8/cmake-2.8.11.2.tar.gz'
+  sha1 '31f217c9305add433e77eff49a6eac0047b9e929'
+
+  head 'http://cmake.org/cmake.git'
+
+  bottle do
+    cellar :any
+    sha1 '024d5263bce0f7f36bde4579ce6fc9be9d55fd72' => :mountain_lion
+    sha1 'bfcc7c9925aea56bd5ce883ed8ca391c27144551' => :lion
+    sha1 '22a1369e2ed4b4a4113621b9df6fd75b162e35fb' => :snow_leopard
+  end
+
+  depends_on NoExpatFramework
+
   def install
-    # A framework-installed expat will be detected and mess things up.
-    if File.exist? "/Library/Frameworks/expat.framework"
-      opoo "/Library/Frameworks/expat.framework detected"
-      puts <<-EOS.undent
-        This will be picked up by Cmake's build system and likey cause the
-        build to fail, trying to link to a 32-bit version of expat.
-        You may need to move this file out of the way for this brew to work.
-      EOS
-    end
+    args = %W[
+      --prefix=#{prefix}
+      --system-libs
+      --no-system-libarchive
+      --datadir=/share/cmake
+      --docdir=/share/doc/cmake
+      --mandir=/share/man
+    ]
 
-    if ENV['GREP_OPTIONS'] == "--color=always"
-      opoo "GREP_OPTIONS is set to '--color=always'"
-      puts <<-EOS.undent
-        Having `GREP_OPTIONS` set this way causes Cmake builds to fail.
-        You will need to `unset GREP_OPTIONS` before brewing.
-      EOS
-    end
-
-    system "./bootstrap", "--prefix=#{prefix}",
-                          "--system-libs",
-                          "--no-system-libarchive",
-                          "--datadir=/share/cmake",
-                          "--docdir=/share/doc/cmake",
-                          "--mandir=/share/man"
+    system "./bootstrap", *args
     system "make"
     system "make install"
+  end
+
+  test do
+    (testpath/'CMakeLists.txt').write('find_package(Ruby)')
+    system "#{bin}/cmake", '.'
   end
 end

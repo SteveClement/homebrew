@@ -1,13 +1,13 @@
 require 'formula'
 
 class Glew < Formula
-  url 'http://downloads.sourceforge.net/project/glew/glew/1.6.0/glew-1.6.0.tgz'
   homepage 'http://glew.sourceforge.net/'
-  md5 '7dfbb444b5a4e125bc5dba0aef403082'
+  url 'http://downloads.sourceforge.net/project/glew/glew/1.10.0/glew-1.10.0.tgz'
+  sha1 'f41b45ca4a630ad1d00b8b87c5f493781a380300'
 
   def install
-    (lib+'pkgconfig').mkpath
-    system "make", "GLEW_DEST=#{prefix}"
-    system "make", "GLEW_DEST=#{prefix}", "install"
+    inreplace "glew.pc.in", "Requires: glu", ""
+    system "make", "GLEW_DEST=#{prefix}", "all"
+    system "make", "GLEW_DEST=#{prefix}", "install.all"
   end
 end

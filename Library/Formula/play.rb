@@ -1,15 +1,19 @@
 require 'formula'
 
 class Play < Formula
-  url 'http://download.playframework.org/releases/play-1.2.2.zip'
   homepage 'http://www.playframework.org/'
-  md5 'd50f34bacf02f1ebb90eb13920b14346'
+  head 'https://github.com/playframework/playframework.git'
+  url 'http://downloads.typesafe.com/play/2.2.0/play-2.2.0.zip'
+  sha1 '455b0c24cf94c8c59c03df0a1fd3bf7f33c2c953'
 
   def install
-    rm_rf 'python' # we don't need the bundled Python for windows
+    system "./framework/build", "publish-local" if build.head?
+
+    # remove Windows .bat files
     rm Dir['*.bat']
+    rm Dir["#{buildpath}/**/*.bat"] if build.head?
+
     libexec.install Dir['*']
-    bin.mkpath
-    ln_s libexec+'play', bin
+    bin.install_symlink libexec/'play'
   end
 end

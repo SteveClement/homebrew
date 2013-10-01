@@ -1,11 +1,17 @@
 require 'formula'
 
 class Tomcat < Formula
-  url 'http://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-7/v7.0.20/bin/apache-tomcat-7.0.20.tar.gz'
   homepage 'http://tomcat.apache.org/'
-  md5 'e6a8b71d334d28a471682ee02fd08b91'
+  url 'http://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-7/v7.0.42/bin/apache-tomcat-7.0.42.tar.gz'
+  sha1 '001a64629a93103d4f53ac95faf3e52a63657b95'
 
-  skip_clean :all
+  devel do
+    url 'http://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-8/v8.0.0-RC3/bin/apache-tomcat-8.0.0-RC3.tar.gz'
+    sha1 'a6a7df2358851c50bcfe1e5ddf0f42a13de2756a'
+  end
+
+  # Keep log folders
+  skip_clean 'libexec'
 
   def install
     # Remove Windows scripts
@@ -14,9 +20,6 @@ class Tomcat < Formula
     # Install files
     prefix.install %w{ NOTICE LICENSE RELEASE-NOTES RUNNING.txt }
     libexec.install Dir['*']
-
-    # Symlink binaries
-    bin.mkpath
-    ln_s "#{libexec}/bin/catalina.sh", bin+"catalina"
+    bin.install_symlink "#{libexec}/bin/catalina.sh" => "catalina"
   end
 end
