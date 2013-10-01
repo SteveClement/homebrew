@@ -22,6 +22,7 @@ class Mutt < Formula
   option "with-slang", "Build against slang instead of ncurses"
   option "with-ignore-thread-patch", "Apply ignore-thread patch"
   option "with-pgp-verbose-mime-patch", "Apply PGP verbose mime patch"
+  option "with-pgp-multiple-crypt-hook-patch", "Apply PGP multiple-crypti-hook patch"
   option "with-confirm-attachment-patch", "Apply confirm attachment patch"
 
   depends_on 'tokyo-cabinet'
@@ -36,6 +37,8 @@ class Mutt < Formula
       ['with-ignore-thread-patch', 'https://gist.github.com/mistydemeo/5522742/raw/1439cc157ab673dc8061784829eea267cd736624/ignore-thread-1.5.21.patch'],
       ['with-pgp-verbose-mime-patch',
           'http://patch-tracker.debian.org/patch/series/dl/mutt/1.5.21-6.2/features-old/patch-1.5.4.vk.pgp_verbose_mime'],
+      ['with-pgp-multiple-crypt-hook-patch',
+          'http://localhost.lu/mutt/patches/patch-1.5.21.sc.multiple-crypt-hook'],
       ['with-confirm-attachment-patch', 'https://gist.github.com/tlvince/5741641/raw/c926ca307dc97727c2bd88a84dcb0d7ac3bb4bf5/mutt-attach.patch'],
     ]
 
