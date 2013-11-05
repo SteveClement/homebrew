@@ -34,7 +34,6 @@ class PythonDependency < Requirement
   end
 
   def initialize(default_version="2.6", tags=[])
-    tags = [tags].flatten
     # Extract the min_version if given. Default to default_version else
     if /(\d+\.)*\d+/ === tags.first.to_s
       @min_version = PythonVersion.new(tags.shift)
@@ -143,8 +142,8 @@ class PythonDependency < Requirement
     if brewed?
       # Homebrew since a long while only supports frameworked python
       HOMEBREW_PREFIX/"opt/#{python}/Frameworks/Python.framework/Versions/#{version.major}.#{version.minor}"
-    elsif from_osx?
-      # Python on OS X has been stripped off its includes (unless you install the CLT), therefore we use the MacOS.sdk.
+    elsif from_osx? and MacOS.version < :mavericks
+      # Python on OS X before Mavericks has been stripped off its includes (unless you install the CLT), therefore we use the MacOS.sdk.
       Pathname.new("#{MacOS.sdk_path}/System/Library/Frameworks/Python.framework/Versions/#{version.major}.#{version.minor}")
     else
       # What Python knows about itself

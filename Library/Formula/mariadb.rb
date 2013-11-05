@@ -27,11 +27,6 @@ class Mariadb < Formula
 
   env :std if build.universal?
 
-  fails_with :clang do
-    build 500
-    cause "error: implicit instantiation of undefined template 'boost::STATIC_ASSERTION_FAILURE<false>'"
-  end
-
   def install
     # Don't hard-code the libtool path. See:
     # https://github.com/mxcl/homebrew/issues/20185
@@ -55,6 +50,10 @@ class Mariadb < Formula
       -DDEFAULT_COLLATION=utf8_general_ci
       -DINSTALL_SYSCONFDIR=#{etc}
     ]
+
+    # oqgraph requires boost, but fails to compile against boost 1.54
+    # Upstream bug: https://mariadb.atlassian.net/browse/MDEV-4795
+    cmake_args << "-DWITHOUT_OQGRAPH_STORAGE_ENGINE=1"
 
     # Build the embedded server
     cmake_args << "-DWITH_EMBEDDED_SERVER=ON" if build.include? 'with-embedded'
@@ -103,12 +102,12 @@ class Mariadb < Formula
 
       ln_s "#{prefix}/support-files/mysql.server", bin
     end
+
+    # Make sure the var/mysql directory exists
+    (var+"mysql").mkpath
   end
 
   def post_install
-    # Make sure the var/mysql directory exists
-    (var+"mysql").mkpath
-
     unless File.exist? "#{var}/mysql/mysql/user.frm"
       ENV['TMPDIR'] = nil
       system "#{bin}/mysql_install_db", '--verbose', "--user=#{ENV['USER']}",
