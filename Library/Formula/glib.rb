@@ -1,12 +1,19 @@
 require 'formula'
 
 class Glib < Formula
-  homepage 'http://developer.gnome.org/glib/'
-  url 'http://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.1.tar.xz'
-  sha256 '01906c62ac666d2ab3183cc07261b2536fab7b211c6129ab66b119c2af56d159'
+  homepage "http://developer.gnome.org/glib/"
+  url "http://ftp.gnome.org/pub/gnome/sources/glib/2.40/glib-2.40.0.tar.xz"
+  sha256 "0d27f195966ecb1995dcce0754129fd66ebe820c7cd29200d264b02af1aa28b5"
+
+  bottle do
+    sha1 "85f199d88dd10459de8752a42bd25a6092046d14" => :mavericks
+    sha1 "6c7aada5d49452943a59949ae71a51a8dce627b3" => :mountain_lion
+    sha1 "ab9fe14888599a51f45afc91a4af007f1311a67c" => :lion
+  end
 
   option :universal
   option 'test', 'Build a debug build and run tests. NOTE: Not all tests succeed yet'
+  option 'with-static', 'Build glib with a static archive.'
 
   depends_on 'pkg-config' => :build
   depends_on 'gettext'
@@ -23,26 +30,29 @@ class Glib < Formula
     sha1 '0926f19d62769dfd3ff91a80ade5eff2c668ec54'
   end if build.universal?
 
-  def patches
-    p = {}
-    p[:p1] = []
-    # https://bugzilla.gnome.org/show_bug.cgi?id=673135 Resolved as wontfix,
-    # but needed to fix an assumption about the location of the d-bus machine
-    # id file.
-    p[:p1] << "https://gist.github.com/jacknagel/6700436/raw/a94f21a9c5ccd10afa0a61b11455c880640f3133/glib-configurable-paths.patch"
-    # Fixes compilation with FSF GCC. Doesn't fix it on every platform, due
-    # to unrelated issues in GCC, but improves the situation.
-    # Patch submitted upstream: https://bugzilla.gnome.org/show_bug.cgi?id=672777
-    p[:p1] << "https://gist.github.com/mistydemeo/8c7eaf0940b6b9159779/raw/11b3b1f09d15ccf805b0914a15eece11685ea8a5/gio.diff"
-    p[:p0] = "https://trac.macports.org/export/111532/trunk/dports/devel/glib2/files/patch-configure.diff" if build.universal?
-    p
+  # https://bugzilla.gnome.org/show_bug.cgi?id=673135 Resolved as wontfix,
+  # but needed to fix an assumption about the location of the d-bus machine
+  # id file.
+  patch do
+    url "https://gist.githubusercontent.com/jacknagel/6700436/raw/2d790a8bd0c59ef66835866523988fbf9f680443/glib-configurable-paths.patch"
+    sha1 "7b89ce26c256e43cfdc11bae0c4498ec8529bcd4"
   end
+
+  # Fixes compilation with FSF GCC. Doesn't fix it on every platform, due
+  # to unrelated issues in GCC, but improves the situation.
+  # Patch submitted upstream: https://bugzilla.gnome.org/show_bug.cgi?id=672777
+  patch do
+    url "https://gist.githubusercontent.com/jacknagel/9835034/raw/b0388e86f74286f4271f9b0dca8219fdecafd5e3/gio.patch"
+    sha1 "32158fffbfb305296f7665ede6185a47d6f6b389"
+  end
+
+  patch do
+    url "https://gist.githubusercontent.com/jacknagel/9726139/raw/9d5635480d96d6b5c717d2c0d5d24de38b68ffbd/universal.patch"
+    sha1 "7f38cab550571b39989275362995ade214b44490"
+  end if build.universal?
 
   def install
     ENV.universal_binary if build.universal?
-
-    # -w is said to causes gcc to emit spurious errors for this package
-    ENV.enable_warnings if ENV.compiler == :gcc
 
     # Disable dtrace; see https://trac.macports.org/ticket/30413
     args = %W[
@@ -50,12 +60,13 @@ class Glib < Formula
       --disable-dependency-tracking
       --disable-silent-rules
       --disable-dtrace
-      --disable-modular-tests
       --disable-libelf
       --prefix=#{prefix}
       --localstatedir=#{var}
       --with-gio-module-dir=#{HOMEBREW_PREFIX}/lib/gio/modules
     ]
+
+    args << '--enable-static' if build.with? 'static'
 
     system "./configure", *args
 
@@ -69,11 +80,9 @@ class Glib < Formula
     system "ulimit -n 1024; make check" if build.include? 'test'
     system "make install"
 
-    # This sucks; gettext is Keg only to prevent conflicts with the wider
-    # system, but pkg-config or glib is not smart enough to have determined
-    # that libintl.dylib isn't in the DYLIB_PATH so we have to add it
-    # manually.
-    gettext = Formula.factory('gettext').opt_prefix
+    # `pkg-config --libs glib-2.0` includes -lintl, and gettext itself does not
+    # have a pkgconfig file, so we add gettext lib and include paths here.
+    gettext = Formula["gettext"].opt_prefix
     inreplace lib+'pkgconfig/glib-2.0.pc' do |s|
       s.gsub! 'Libs: -L${libdir} -lglib-2.0 -lintl',
               "Libs: -L${libdir} -lglib-2.0 -L#{gettext}/lib -lintl"
@@ -100,8 +109,8 @@ class Glib < Formula
           return (strcmp(str, result_2) == 0) ? 0 : 1;
       }
       EOS
-    flags = `pkg-config --cflags --libs glib-2.0`.split + ENV.cflags.split
-    system ENV.cc, "-o", "test", "test.c", *flags
+    flags = ["-I#{include}/glib-2.0", "-I#{lib}/glib-2.0/include", "-lglib-2.0"]
+    system ENV.cc, "-o", "test", "test.c", *(flags + ENV.cflags.split)
     system "./test"
   end
 end

@@ -7,9 +7,10 @@ class Gfortran < Formula
   sha1 '810fb70bd721e1d9f446b6503afe0a9088b62986'
 
   bottle do
-    sha1 '4bf29afb128791de733e10f3000bcd479a9e3808' => :mountain_lion
-    sha1 '9814a52f73882e801a92b8bea20ae9475d389306' => :lion
-    sha1 '7d7b7d79b973ff32824d442a79c22a8c2d455467' => :snow_leopard
+    revision 1
+    sha1 'b0e7a0c7b6b0472b6cea9e73b2312df48f7c6c82' => :mavericks
+    sha1 '45d4f1b8c492a7c5abd67685a9bbfc408e474458' => :mountain_lion
+    sha1 '2d09223b679cdaa28fe3d9c192b65cec56353db9' => :lion
   end
 
   option 'enable-profiled-build', 'Make use of profile guided optimization when bootstrapping GCC'
@@ -43,11 +44,11 @@ class Gfortran < Formula
       "--enable-languages=fortran",
       "--with-system-zlib",
       # ...opt_prefix survives upgrades and works even if `brew unlink gmp`
-      "--with-gmp=#{Formula.factory('gmp').opt_prefix}",
-      "--with-mpfr=#{Formula.factory('mpfr').opt_prefix}",
-      "--with-mpc=#{Formula.factory('libmpc').opt_prefix}",
-      "--with-cloog=#{Formula.factory('cloog').opt_prefix}",
-      "--with-isl=#{Formula.factory('isl').opt_prefix}",
+      "--with-gmp=#{Formula['gmp'].opt_prefix}",
+      "--with-mpfr=#{Formula['mpfr'].opt_prefix}",
+      "--with-mpc=#{Formula['libmpc'].opt_prefix}",
+      "--with-cloog=#{Formula['cloog'].opt_prefix}",
+      "--with-isl=#{Formula['isl'].opt_prefix}",
       # ...and disable isl and cloog version checks in case they upgrade
       "--disable-cloog-version-check",
       "--disable-isl-version-check",
@@ -61,7 +62,7 @@ class Gfortran < Formula
       '--disable-nls'
     ]
 
-    # https://github.com/mxcl/homebrew/issues/19584#issuecomment-19661219
+    # https://github.com/Homebrew/homebrew/issues/19584#issuecomment-19661219
     if build.include? 'enable-multilib' and MacOS.prefer_64_bit?
       args << '--enable-multilib'
     else
@@ -96,7 +97,6 @@ class Gfortran < Formula
     info.children.reject{ |p| p.basename.to_s.match(/gfortran/) }.each(&:unlink)
     man1.children.reject{ |p| p.basename.to_s.match(/gfortran/) }.each(&:unlink)
     man7.rmtree  # dupes: fsf fundraising and gpl
-    # (share/'locale').rmtree
     (share/"gcc-#{version}").rmtree # dupes: libstdc++ pretty printer, will be added by gcc* formula
   end
 
@@ -119,7 +119,7 @@ class Gfortran < Formula
   end
 
   def caveats; <<-EOS.undent
-    Brews that require a Fortran compiler should use:
+    Formulae that require a Fortran compiler should use:
       depends_on :fortran
     EOS
   end

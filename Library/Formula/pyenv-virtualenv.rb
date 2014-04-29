@@ -1,17 +1,16 @@
-require 'formula'
+require "formula"
 
 class PyenvVirtualenv < Formula
-  homepage 'https://github.com/yyuu/pyenv-virtualenv'
-  url 'https://github.com/yyuu/pyenv-virtualenv/archive/v20130622.tar.gz'
-  sha1 '2e27b3b76931e6f0eecc4bccb3166d1abc130393'
+  homepage "https://github.com/yyuu/pyenv-virtualenv"
+  url "https://github.com/yyuu/pyenv-virtualenv/archive/v20140421.tar.gz"
+  sha1 "65a82ec70a1de8995d4238fd23becd152e25bdcf"
 
-  head 'https://github.com/yyuu/pyenv-virtualenv.git'
+  head "https://github.com/yyuu/pyenv-virtualenv.git"
 
-  depends_on 'pyenv'
+  depends_on "pyenv"
 
   def install
-    ENV['PREFIX'] = prefix
+    ENV["PREFIX"] = prefix
     system "./install.sh"
-    ln_sf opt_prefix, "#{HOMEBREW_PREFIX}/var/lib/pyenv/plugins/#{name}"
   end
 end

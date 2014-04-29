@@ -2,8 +2,8 @@ require 'formula'
 
 class Libcouchbase < Formula
   homepage 'http://couchbase.com/communities/c'
-  url 'http://packages.couchbase.com/clients/c/libcouchbase-2.1.3.tar.gz'
-  sha1 '460e6b8744b3d5634c5284ff4c690c207c61f9a6'
+  url 'http://packages.couchbase.com/clients/c/libcouchbase-2.3.0.tar.gz'
+  sha1 'dbb97594582e5a9240fa8090bb756990f2d1b550'
 
   option :universal
   option 'with-libev-plugin', 'Build libev IO plugin (will pull libev dependency)'
@@ -33,7 +33,7 @@ class Libcouchbase < Formula
     system "make install"
   end
 
-  def test
+  test do
     system "#{bin}/cbc", "version"
   end
 end

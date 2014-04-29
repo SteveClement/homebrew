@@ -2,15 +2,13 @@ module Homebrew extend self
 
   def tap
     if ARGV.empty?
-      tapd = HOMEBREW_LIBRARY/"Taps"
-      tapd.children.each do |tap|
-        # only replace the *last* dash: yes, tap filenames suck
-        puts tap.basename.to_s.reverse.sub('-', '/').reverse if (tap/'.git').directory?
-      end if tapd.directory?
+      each_tap do |user, repo|
+        puts "#{user.basename}/#{repo.basename.sub("homebrew-", "")}" if (repo/".git").directory?
+      end
     elsif ARGV.first == "--repair"
       repair_taps
     else
-      install_tap(*tap_args)
+      opoo "Already tapped!" unless install_tap(*tap_args)
     end
   end
 
@@ -22,56 +20,46 @@ module Homebrew extend self
     user = "homebrew" if user == "Homebrew"
 
     # we downcase to avoid case-insensitive filesystem issues
-    tapd = HOMEBREW_LIBRARY/"Taps/#{user.downcase}-#{repo.downcase}"
-    raise AlreadyTappedError if tapd.directory?
+    tapd = HOMEBREW_LIBRARY/"Taps/#{user.downcase}/homebrew-#{repo.downcase}"
+    return false if tapd.directory?
     abort unless system "git clone https://github.com/#{repouser}/homebrew-#{repo} #{tapd}"
 
     files = []
-    tapd.find_formula{ |file| files << tapd.basename.join(file) }
+    tapd.find_formula { |file| files << file }
     link_tap_formula(files)
     puts "Tapped #{files.length} formula"
 
-    # Figure out if this repo is private
-    # curl will throw an exception if the repo is private (Github returns a 404)
-    begin
-      curl('-Ifso', '/dev/null', "https://api.github.com/repos/#{repouser}/homebrew-#{repo}")
-    rescue
-      puts
-      puts "It looks like you tapped a private repository"
-      puts "In order to not input your credentials every time"
-      puts "you can use git HTTP credential caching or issue the"
-      puts "following command:"
-      puts
-      puts "   cd #{tapd}"
-      puts "   git remote set-url origin git@github.com:#{repouser}/homebrew-#{repo}.git"
-      puts
+    if private_tap?(repouser, repo) then puts <<-EOS.undent
+      It looks like you tapped a private repository. To avoid entering your
+      credentials each time you update, you can use git HTTP credential caching
+      or issue the following command:
+
+        cd #{tapd}
+        git remote set-url origin git@github.com:#{repouser}/homebrew-#{repo}.git
+      EOS
     end
+
+    true
   end
 
-  def link_tap_formula formulae
+  def link_tap_formula paths
     ignores = (HOMEBREW_LIBRARY/"Formula/.gitignore").read.split rescue []
     tapped = 0
 
-    cd HOMEBREW_LIBRARY/"Formula" do
-      formulae.each do |formula|
-        from = HOMEBREW_LIBRARY.join("Taps/#{formula}")
-        to = HOMEBREW_LIBRARY.join("Formula/#{formula.basename}")
+    paths.each do |path|
+      to = HOMEBREW_LIBRARY.join("Formula", path.basename)
 
-        # Unexpected, but possible, lets proceed as if nothing happened
-        to.delete if to.symlink? and to.realpath == from
+      # Unexpected, but possible, lets proceed as if nothing happened
+      to.delete if to.symlink? && to.resolved_path == path
 
-        # using the system ln is the only way to get relative symlinks
-        system "ln -s ../Taps/#{formula} 2>/dev/null"
-        if $?.success?
-          ignores << formula.basename.to_s
-          tapped += 1
-        else
-          to = to.realpath if to.exist?
-          # Whitelist gcc42 temporarily until Mavericks/Xcode 5.0 issues are resolved.
-          unless to.tap_ref == 'mxcl/master/apple-gcc42'
-            opoo "Could not tap #{Tty.white}#{from.tap_ref}#{Tty.reset} over #{Tty.white}#{to.tap_ref}#{Tty.reset}"
-          end
-        end
+      begin
+        to.make_relative_symlink(path)
+      rescue SystemCallError
+        to = to.resolved_path if to.symlink?
+        opoo "Could not tap #{Tty.white}#{tap_ref(path)}#{Tty.reset} over #{Tty.white}#{tap_ref(to)}#{Tty.reset}"
+      else
+        ignores << path.basename.to_s
+        tapped += 1
       end
     end
 
@@ -95,9 +83,9 @@ module Homebrew extend self
 
     count = 0
     # check symlinks are all set in each tap
-    HOMEBREW_REPOSITORY.join("Library/Taps").children.each do |tap|
+    each_tap do |user, repo|
       files = []
-      tap.find_formula{ |file| files << tap.basename.join(file) } if tap.directory?
+      repo.find_formula { |file| files << file }
       count += link_tap_formula(files)
     end
 
@@ -106,22 +94,38 @@ module Homebrew extend self
 
   private
 
+  def each_tap
+    taps = HOMEBREW_LIBRARY.join("Taps")
+
+    if taps.directory?
+      taps.subdirs.each do |user|
+        user.subdirs.each do |repo|
+          yield user, repo
+        end
+      end
+    end
+  end
+
   def tap_args
-    ARGV.first =~ %r{^(\S+)/(homebrew-)?(\w+)$}
-    raise "Invalid usage" unless $1 and $3
+    ARGV.first =~ %r{^([\w_-]+)/(homebrew-)?([\w_-]+)$}
+    raise "Invalid tap name" unless $1 && $3
     [$1, $3]
   end
 
-end
+  def private_tap?(user, repo)
+    GitHub.private_repo?(user, "homebrew-#{repo}")
+  rescue GitHub::HTTPNotFoundError
+    true
+  rescue GitHub::Error
+    false
+  end
 
-
-class Pathname
-  def tap_ref
-    case self.to_s
-    when %r{^#{HOMEBREW_LIBRARY}/Taps/([a-z\-_]+)-(\w+)/(.+)}
+  def tap_ref(path)
+    case path.to_s
+    when %r{^#{HOMEBREW_LIBRARY}/Taps/([\w_-]+)/([\w_-]+)/(.+)}
       "#$1/#$2/#{File.basename($3, '.rb')}"
     when %r{^#{HOMEBREW_LIBRARY}/Formula/(.+)}
-      "mxcl/master/#{File.basename($1, '.rb')}"
+      "Homebrew/homebrew/#{File.basename($1, '.rb')}"
     else
       nil
     end

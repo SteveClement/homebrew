@@ -1,36 +1,37 @@
 require 'formula'
 
 class Git < Formula
-  homepage 'http://git-scm.com'
-  url 'http://git-core.googlecode.com/files/git-1.8.4.2.tar.gz'
-  sha1 'f2e9317703553b4215700605c15d0f3a30623a9d'
-  head 'https://github.com/git/git.git'
+  homepage "http://git-scm.com"
+  url "https://www.kernel.org/pub/software/scm/git/git-1.9.2.tar.gz"
+  sha1 "5181808d99ea959951ee55a083de3bce8603436b"
+  head "https://github.com/git/git.git", :shallow => false
 
   bottle do
-    sha1 '028a2d04720decebabc8a7a9e47121ab95e967be' => :mavericks
-    sha1 '7b3d19e95c10c66a927928e18fe83c9fbd53eb04' => :mountain_lion
-    sha1 '826fae4c92d82d7e87ad7a4f543d5eb503b31440' => :lion
+    sha1 "ff18e0627a084d5f26052e9a2ffc186e3021f283" => :mavericks
+    sha1 "e7b9e452a60ea46d6f32d90b0b9e2801b4675cdb" => :mountain_lion
+    sha1 "58aa489119bb688648561305fec0f5bee4e55866" => :lion
   end
 
   option 'with-blk-sha1', 'Compile with the block-optimized SHA1 implementation'
   option 'without-completions', 'Disable bash/zsh completions from "contrib" directory'
   option 'with-brewed-openssl', "Build with Homebrew OpenSSL instead of the system version"
   option 'with-brewed-curl', "Use Homebrew's version of cURL library"
+  option 'with-persistent-https', 'Build git-remote-persistent-https from "contrib" directory'
 
-  depends_on :python
   depends_on 'pcre' => :optional
   depends_on 'gettext' => :optional
   depends_on 'openssl' if build.with? 'brewed-openssl'
-  depends_on 'curl' => 'with-darwinssl' if build.with? 'brewed-curl'
+  depends_on 'curl' if build.with? 'brewed-curl'
+  depends_on 'go' => :build if build.with? 'persistent-https'
 
-  resource 'man' do
-    url 'http://git-core.googlecode.com/files/git-manpages-1.8.4.2.tar.gz'
-    sha1 'aebbb6dc8bca979f8d54bdef51b128deba195c94'
+  resource "man" do
+    url "https://www.kernel.org/pub/software/scm/git/git-manpages-1.9.2.tar.gz"
+    sha1 "6f0871d02dd9181f59d6c59c3a4d26e2b42fbc0b"
   end
 
-  resource 'html' do
-    url 'http://git-core.googlecode.com/files/git-htmldocs-1.8.4.2.tar.gz'
-    sha1 'b0d5e7e24aba1af4a8e1a4fa9c894c3a673bf5d8'
+  resource "html" do
+    url "https://www.kernel.org/pub/software/scm/git/git-htmldocs-1.9.2.tar.gz"
+    sha1 "2563dade9a5282f6211740a6327ed13f8ff2df83"
   end
 
   def install
@@ -39,8 +40,12 @@ class Git < Formula
     ENV['NO_DARWIN_PORTS'] = '1'
     ENV['V'] = '1' # build verbosely
     ENV['NO_R_TO_GCC_LINKER'] = '1' # pass arguments to LD correctly
-    ENV['PYTHON_PATH'] = python.binary if python
+    ENV['PYTHON_PATH'] = which 'python'
     ENV['PERL_PATH'] = which 'perl'
+
+    if MacOS.version >= :mavericks and MacOS.dev_tools_prefix
+      ENV['PERLLIB_EXTRA'] = "#{MacOS.dev_tools_prefix}/Library/Perl/5.16/darwin-thread-multi-2level"
+    end
 
     unless quiet_system ENV['PERL_PATH'], '-e', 'use ExtUtils::MakeMaker'
       ENV['NO_PERL_MAKEMAKER'] = '1'
@@ -50,10 +55,12 @@ class Git < Formula
 
     if build.with? 'pcre'
       ENV['USE_LIBPCRE'] = '1'
-      ENV['LIBPCREDIR'] = Formula.factory('pcre').opt_prefix
+      ENV['LIBPCREDIR'] = Formula['pcre'].opt_prefix
     end
 
-    ENV['NO_GETTEXT'] = '1' unless build.with? 'gettext'
+    ENV['NO_GETTEXT'] = '1' if build.without? 'gettext'
+
+    ENV['GIT_DIR'] = cached_download/".git" if build.head?
 
     system "make", "prefix=#{prefix}",
                    "sysconfdir=#{etc}",
@@ -61,6 +68,8 @@ class Git < Formula
                    "CFLAGS=#{ENV.cflags}",
                    "LDFLAGS=#{ENV.ldflags}",
                    "install"
+
+    bin.install Dir["contrib/remote-helpers/git-remote-{hg,bzr}"]
 
     # Install the OS X keychain credential helper
     cd 'contrib/credential/osxkeychain' do
@@ -79,7 +88,16 @@ class Git < Formula
       bin.install 'git-subtree'
     end
 
-    unless build.without? 'completions'
+    if build.with? 'persistent-https'
+      cd 'contrib/persistent-https' do
+        system "make"
+        bin.install 'git-remote-persistent-http',
+                    'git-remote-persistent-https',
+                    'git-remote-persistent-https--proxy'
+      end
+    end
+
+    if build.with? 'completions'
       # install the completion script first because it is inside 'contrib'
       bash_completion.install 'contrib/completion/git-completion.bash'
       bash_completion.install 'contrib/completion/git-prompt.sh'
@@ -95,7 +113,7 @@ class Git < Formula
     man.install resource('man')
     (share+'doc/git-doc').install resource('html')
 
-    # Make html docs world-readable; check if this is still needed at 1.8.4.2
+    # Make html docs world-readable; check if this is still needed at 1.8.6
     chmod 0644, Dir["#{share}/doc/git-doc/**/*.{html,txt}"]
   end
 

@@ -2,15 +2,19 @@ require 'formula'
 
 class SwiProlog < Formula
   homepage 'http://www.swi-prolog.org/'
-  url 'http://www.swi-prolog.org/download/stable/src/pl-6.4.1.tar.gz'
-  sha1 '37308983d438e364407b89e835f77a31e5474913'
+  url 'http://www.swi-prolog.org/download/stable/src/pl-6.6.4.tar.gz'
+  sha1 '55dc574d7d928a15366bf2f2f0b84f7273edecd5'
 
   devel do
-    url 'http://www.swi-prolog.org/download/devel/src/pl-6.5.2.tar.gz'
-    sha1 'fa448e1e59f901966de533140ce8bf6649e51b03'
+    url 'http://www.swi-prolog.org/download/devel/src/pl-7.1.13.tar.gz'
+    sha1 '99dba7a3a625f33942818b7f1e27f463765ef2ac'
   end
 
-  head 'git://www.swi-prolog.org/home/pl/git/pl.git'
+  head do
+    url 'git://www.swi-prolog.org/home/pl/git/pl.git'
+
+    depends_on :autoconf
+  end
 
   option 'lite', "Disable all packages"
   option 'with-jpl', "Enable JPL (Java Prolog Bridge)"
@@ -18,8 +22,9 @@ class SwiProlog < Formula
 
   depends_on 'readline'
   depends_on 'gmp'
+  depends_on 'libarchive' => :optional
 
-  if build.include? 'with-xpce'
+  if build.with? "xpce"
     depends_on 'pkg-config' => :build
     depends_on :x11
     depends_on 'jpeg'
@@ -37,9 +42,18 @@ class SwiProlog < Formula
   end
 
   def install
-    args = ["--prefix=#{prefix}", "--mandir=#{man}"]
-    ENV.append 'DISABLE_PKGS', "jpl" unless build.include? "with-jpl"
-    ENV.append 'DISABLE_PKGS', "xpce" unless build.include? 'with-xpce'
+    # The archive package hard-codes a check for MacPort libarchive
+    # Replace this with a check for Homebrew's libarchive, or nowhere
+    if build.with? "libarchive"
+      inreplace "packages/archive/configure.in", "/opt/local",
+                                                 Formula['libarchive'].opt_prefix
+    else
+      ENV.append "DISABLE_PKGS", "archive"
+    end
+
+    args = ["--prefix=#{libexec}", "--mandir=#{man}"]
+    ENV.append 'DISABLE_PKGS', "jpl" if build.without? "jpl"
+    ENV.append 'DISABLE_PKGS', "xpce" if build.without? "xpce"
 
     # SWI-Prolog's Makefiles don't add CPPFLAGS to the compile command, but do
     # include CIFLAGS. Setting it here. Also, they clobber CFLAGS, so including
@@ -57,9 +71,11 @@ class SwiProlog < Formula
     system "./configure", *args
     system "make"
     system "make install"
+
+    bin.write_exec_script Dir["#{libexec}/bin/*"]
   end
 
-  def test
+  test do
     system "#{bin}/swipl", "--version"
   end
 end

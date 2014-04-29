@@ -2,7 +2,7 @@ require 'formula'
 
 class Burp < Formula
   homepage 'http://burp.grke.org/'
-  url 'http://downloads.sourceforge.net/project/burp/burp-1.3.36%20%28stable%20candidate%29/burp-1.3.36.tar.bz2'
+  url 'http://burp.grke.org/downloads/burp-1.3.36/burp-1.3.36.tar.bz2'
   sha1 '471237090e631b3cb91ff864db84c7644c42bf87'
 
   head 'https://github.com/grke/burp.git'
@@ -10,9 +10,7 @@ class Burp < Formula
   depends_on 'librsync'
 
   # patches to change directories to brew conventions in Makefile and config files
-  def patches
-    DATA
-  end
+  patch :DATA
 
   def install
    system "./configure", "--prefix=#{prefix}",
@@ -25,6 +23,41 @@ class Burp < Formula
   test do
     system "#{bin}/burp", "-v"
   end
+
+  plist_options :startup => true
+
+  def plist; <<-EOS.undent
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>Label</key>
+      <string>#{plist_name}</string>
+      <key>UserName</key>
+      <string>root</string>
+      <key>KeepAlive</key>
+      <false/>
+      <key>ProgramArguments</key>
+      <array>
+        <string>#{opt_bin}/burp</string>
+        <string>-a</string>
+        <string>t</string>
+      </array>
+      <key>StartInterval</key>
+      <integer>1200</integer>
+      <key>WorkingDirectory</key>
+      <string>#{HOMEBREW_PREFIX}</string>
+    </dict>
+    </plist>
+    EOS
+  end
+
+  def caveats; <<-EOS.undent
+    Before installing the launchd entry you should configure your burp client in
+    #{etc}/burp/burp.conf
+    EOS
+  end
+
 end
 
 __END__

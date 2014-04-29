@@ -6,7 +6,7 @@ require 'formula'
 # JACKOSX, a pre-built binary form for which the source is not available.
 # If you require JACKv2, you should use that. Otherwise, this formula should
 # operate fine.
-# Please see https://github.com/mxcl/homebrew/pull/22043 for more info
+# Please see https://github.com/Homebrew/homebrew/pull/22043 for more info
 class Jack < Formula
   homepage 'http://jackaudio.org'
   url 'http://jackaudio.org/downloads/jack-audio-connection-kit-0.121.3.tar.gz'
@@ -16,10 +16,8 @@ class Jack < Formula
   depends_on 'libsndfile'
   depends_on 'libsamplerate'
 
-  def patches
-    # Change pThread header include from CarbonCore
-    { :p0 => DATA }
-  end if MacOS.version >= :mountain_lion
+  # Change pThread header include from CarbonCore
+  patch :p0, :DATA if MacOS.version >= :mountain_lion
 
   plist_options :manual => "jackd -d coreaudio"
 
@@ -34,7 +32,7 @@ class Jack < Formula
       <string>#{prefix}</string>
       <key>ProgramArguments</key>
       <array>
-        <string>#{opt_prefix}/bin/jackd</string>
+        <string>#{opt_bin}/jackd</string>
         <string>-d</string>
         <string>coreaudio</string>
       </array>

@@ -2,20 +2,18 @@ require 'formula'
 
 class RxvtUnicode < Formula
   homepage 'http://software.schmorp.de/pkg/rxvt-unicode.html'
-  url 'http://dist.schmorp.de/rxvt-unicode/Attic/rxvt-unicode-9.15.tar.bz2'
-  sha1 'e6fdf091860ecb458730dc68b0176f67f207a2f7'
+  url 'http://dist.schmorp.de/rxvt-unicode/Attic/rxvt-unicode-9.19.tar.bz2'
+  sha1 '979f990b73cf057d81f25884668f362b5a748154'
 
   option "disable-iso14755", "Disable ISO 14775 Shift+Ctrl hotkey"
 
   depends_on 'pkg-config' => :build
   depends_on :x11
 
-  def patches
-    # Patch hunks 1 and 2 allow perl support to compile on Intel.
-    # Hunk 3 is taken from http://aur.archlinux.org/packages.php?ID=44649
-    # which removes an extra 10% font width that urxvt adds.
-    DATA
-  end
+  # Patch hunks 1 and 2 allow perl support to compile on Intel.
+  # Hunk 3 is taken from http://aur.archlinux.org/packages.php?ID=44649
+  # which removes an extra 10% font width that urxvt adds.
+  patch :DATA
 
   fails_with :llvm do
     build 2336
@@ -25,7 +23,6 @@ class RxvtUnicode < Formula
   def install
     args = ["--prefix=#{prefix}",
             "--mandir=#{man}",
-            "--disable-afterimage",
             "--enable-perl",
             "--enable-256-color",
             "--with-term=rxvt-unicode-256color",

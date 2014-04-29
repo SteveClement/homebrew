@@ -2,8 +2,8 @@ require 'formula'
 
 class IrcdHybrid < Formula
   homepage 'http://www.ircd-hybrid.org/'
-  url 'http://downloads.sourceforge.net/project/ircd-hybrid/ircd-hybrid/ircd-hybrid-8.1.7/ircd-hybrid-8.1.7.tgz'
-  sha1 '8c18839d7cfa289117c49afeac045d282e23441c'
+  url 'https://downloads.sourceforge.net/project/ircd-hybrid/ircd-hybrid/ircd-hybrid-8.1.15/ircd-hybrid-8.1.15.tgz'
+  sha1 '4870009a26eeb1ca844402e5a15783d3cbfc917e'
 
   # ircd-hybrid needs the .la files
   skip_clean :la
@@ -21,10 +21,11 @@ class IrcdHybrid < Formula
                           # there's no config setting for this so set it to something generous
                           "--with-nicklen=30"
     system "make install"
+    etc.install "doc/reference.conf" => "ircd.conf"
   end
 
-  def test
-    system "#{sbin}/ircd", "-version"
+  test do
+    system "#{bin}/ircd", "-version"
   end
 
   def caveats; <<-EOS.undent
@@ -46,7 +47,7 @@ class IrcdHybrid < Formula
       <string>#{plist_name}</string>
       <key>ProgramArguments</key>
       <array>
-        <string>#{opt_prefix}/sbin/ircd</string>
+        <string>#{opt_sbin}/ircd</string>
       </array>
       <key>RunAtLoad</key>
       <true/>

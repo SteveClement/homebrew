@@ -43,7 +43,7 @@ class Version
   NULL_TOKEN = NullToken.new
 
   class StringToken < Token
-    PATTERN = /[a-z]+[0-9]+/i
+    PATTERN = /[a-z]+[0-9]*/i
 
     def initialize(value)
       @value = value.to_s
@@ -146,6 +146,15 @@ class Version
     end
   end
 
+  SCAN_PATTERN = Regexp.union(
+    AlphaToken::PATTERN,
+    BetaToken::PATTERN,
+    RCToken::PATTERN,
+    PatchToken::PATTERN,
+    NumericToken::PATTERN,
+    StringToken::PATTERN
+  )
+
   def self.new_with_scheme(value, scheme)
     if Class === scheme && scheme.ancestors.include?(Version)
       scheme.new(value)
@@ -189,6 +198,11 @@ class Version
     max = [tokens.length, other.tokens.length].max
     pad_to(max) <=> other.pad_to(max)
   end
+  alias_method :eql?, :==
+
+  def hash
+    @version.hash
+  end
 
   def to_s
     @version.dup
@@ -216,16 +230,7 @@ class Version
   end
 
   def tokenize
-    @version.scan(
-      Regexp.union(
-        AlphaToken::PATTERN,
-        BetaToken::PATTERN,
-        RCToken::PATTERN,
-        PatchToken::PATTERN,
-        NumericToken::PATTERN,
-        StringToken::PATTERN
-      )
-    ).map! do |token|
+    @version.scan(SCAN_PATTERN).map! do |token|
       case token
       when /\A#{AlphaToken::PATTERN}\z/o   then AlphaToken
       when /\A#{BetaToken::PATTERN}\z/o    then BetaToken
@@ -313,7 +318,7 @@ class Version
     return m.captures.first unless m.nil?
 
     # e.g. http://mirrors.jenkins-ci.org/war/1.486/jenkins.war
-    m = /\/(\d\.\d+)\//.match(spec_s)
+    m = /\/(\d\.\d+(\.\d)?)\//.match(spec_s)
     return m.captures.first unless m.nil?
 
     # e.g. http://www.ijg.org/files/jpegsrc.v8d.tar.gz

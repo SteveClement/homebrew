@@ -2,11 +2,10 @@ require 'formula'
 
 class Gwyddion < Formula
   homepage 'http://gwyddion.net/'
-  url 'http://downloads.sourceforge.net/project/gwyddion/gwyddion/2.33/gwyddion-2.33.tar.xz'
-  sha1 'bffddf12be9e96f8a2110cb40e035b60842031c7'
+  url 'https://downloads.sourceforge.net/project/gwyddion/gwyddion/2.36/gwyddion-2.36.tar.xz'
+  sha1 '0e81bbc3dbb0aadf5ab2ecb0606bd79a12681be2'
 
   depends_on 'pkg-config' => :build
-  depends_on 'xz' => :build
   depends_on 'gtk+'
   depends_on 'libxml2'
   depends_on 'fftw'

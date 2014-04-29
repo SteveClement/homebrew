@@ -6,7 +6,9 @@ class MitScheme < Formula
   mirror 'http://ftp.gnu.org/gnu/mit-scheme/stable.pkg/9.1.1/mit-scheme-c-9.1.1.tar.gz'
   sha1 '8f175a40061bdfc0248535e198cc7f5b5a0dce32'
 
-  depends_on :x11 if MacOS::X11.installed?
+  conflicts_with 'tinyscheme', :because => 'both install a `scheme` binary'
+
+  depends_on :x11
 
   def install
     # The build breaks __HORRIBLY__ with parallel make -- one target will erase something

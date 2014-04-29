@@ -1,18 +1,26 @@
 require 'formula'
 
 class Opam < Formula
-  homepage 'https://github.com/OCamlPro/opam'
-  url 'https://github.com/OCamlPro/opam/archive/1.0.0.tar.gz'
-  sha1 '5e126f71c7e0caff3b61a751ef09dd66892720ae'
+  homepage 'https://opam.ocaml.org'
+  url 'https://github.com/ocaml/opam/archive/1.1.1.tar.gz'
+  sha1 'f1a8291eb888bfae4476ee59984c9a30106cd483'
 
-  head 'https://github.com/OCamlPro/opam.git'
+  head 'https://github.com/ocaml/opam.git'
 
   depends_on "objective-caml"
+  depends_on "aspcud" => :recommended
+
+  if build.with? "aspcud"
+    needs :cxx11
+  end
 
   def install
+    ENV.deparallelize
+    # Set TERM to workaround bug in ocp-build (ocaml/opam#1038)
+    ENV["TERM"] = "dumb"
     system "./configure", "--prefix=#{prefix}"
     system "make"
-    system "make install"
+    system "make", "install"
 
     bash_completion.install "shell/opam_completion.sh"
     zsh_completion.install "shell/opam_completion_zsh.sh"
@@ -36,7 +44,7 @@ class Opam < Formula
       * On Bash, add them to `~/.bash_profile`.
       * On Zsh, add them to `~/.zprofile` instead.
 
-    Documentation and tutorials are available at http://opam.ocamlpro.com, or
+    Documentation and tutorials are available at http://opam.ocaml.org, or
     via 'man opam' and 'opam --help'.
     EOS
   end

@@ -2,26 +2,24 @@ require 'formula'
 
 class LibreadlineJava < Formula
   homepage 'http://java-readline.sourceforge.net/'
-  url 'http://downloads.sourceforge.net/project/java-readline/java-readline/0.8.0/libreadline-java-0.8.0-src.tar.gz'
+  url 'https://downloads.sourceforge.net/project/java-readline/java-readline/0.8.0/libreadline-java-0.8.0-src.tar.gz'
   sha1 '1f5574f9345afc039e9c7a09ae4979129891d52a'
 
   depends_on 'readline'
 
-  def patches
-    # Fix "non-void function should return a value"-Error
-    # https://sourceforge.net/tracker/?func=detail&atid=453822&aid=3566332&group_id=48669
-    DATA
-  end
+  # Fix "non-void function should return a value"-Error
+  # https://sourceforge.net/tracker/?func=detail&atid=453822&aid=3566332&group_id=48669
+  patch :DATA
 
   def install
     ENV['JAVA_HOME'] = `/usr/libexec/java_home`.chomp!
 
     # Current Oracle JDKs put the jni.h and jni_md.h in a different place than the
     # original Apple/Sun JDK used to.
-    if File.exists? ENV['JAVA_HOME'] + "/include/jni.h" then
+    if File.exist? ENV['JAVA_HOME'] + "/include/jni.h" then
       ENV['JAVAINCLUDE'] = ENV['JAVA_HOME'] + "/include"
       ENV['JAVANATINC'] = ENV['JAVA_HOME'] + "/include/darwin"
-    elsif File.exists? "/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/jni.h"
+    elsif File.exist? "/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/jni.h"
       ENV['JAVAINCLUDE'] = "/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/"
       ENV['JAVANATINC'] = "/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers/"
     end
@@ -55,7 +53,7 @@ class LibreadlineJava < Formula
     system "make build-native"
     system "make install"
 
-    doc.install Dir["api"]
+    doc.install "api"
   end
 
   def caveats; <<-EOS.undent

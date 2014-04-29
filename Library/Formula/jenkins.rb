@@ -2,8 +2,8 @@ require 'formula'
 
 class Jenkins < Formula
   homepage 'http://jenkins-ci.org'
-  url 'http://mirrors.jenkins-ci.org/war/1.537/jenkins.war'
-  sha1 '897c9814b1f2c24909cf4403c1df667ce9dcb7a2'
+  url 'http://mirrors.jenkins-ci.org/war/1.561/jenkins.war'
+  sha1 '8e666db2fd072d75d9a7d928fa0e94b2eab2f6cf'
 
   head 'https://github.com/jenkinsci/jenkins.git'
 
@@ -30,13 +30,19 @@ class Jenkins < Formula
           <string>/usr/bin/java</string>
           <string>-Dmail.smtp.starttls.enable=true</string>
           <string>-jar</string>
-          <string>#{opt_prefix}/libexec/jenkins.war</string>
+          <string>#{opt_libexec}/jenkins.war</string>
           <string>--httpListenAddress=127.0.0.1</string>
+          <string>--httpPort=8080</string>
         </array>
         <key>RunAtLoad</key>
         <true/>
       </dict>
     </plist>
   EOS
+  end
+
+  def caveats; <<-EOS.undent
+    Note: When using launchctl the port will be 8080.
+    EOS
   end
 end

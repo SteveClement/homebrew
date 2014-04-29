@@ -13,6 +13,7 @@ class Tmap < Formula
   option 'perf',    'Enable google performance tools for profiling and heap checking'
   option 'nocolor', 'Disable terminal coloring'
 
+  depends_on :autoconf
   depends_on :automake
   depends_on :libtool
   depends_on 'google-perftools' if build.include? 'perf'
@@ -39,7 +40,7 @@ class Tmap < Formula
     system "make install"
   end
 
-  def test
+  test do
     system "#{bin}/tmap", "-v"
   end
 end

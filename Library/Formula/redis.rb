@@ -2,16 +2,16 @@ require 'formula'
 
 class Redis < Formula
   homepage 'http://redis.io/'
-  url 'http://download.redis.io/releases/redis-2.6.16.tar.gz'
-  sha1 'f94c0f623aaa8c310f9be2a88e81716de01ce0ce'
-
-  head 'https://github.com/antirez/redis.git', :branch => 'unstable'
+  url "http://download.redis.io/releases/redis-2.8.9.tar.gz"
+  sha1 "003ccdc175816e0a751919cf508f1318e54aac1e"
 
   bottle do
-    sha1 '961733ae14c8822c3918a85475141a0514e996c1' => :mavericks
-    sha1 '56d2245a72b6f56af66e979175a441cddc3a3bae' => :mountain_lion
-    sha1 '89dce53fca0c2116bf18ada9f5b2fb16a941d5ce' => :lion
+    sha1 "92ad2c1ffa9d54af09439e4ed99123a0f52fab32" => :mavericks
+    sha1 "8e7dc81f46bb55d0706d539d6b9ea132ff448024" => :mountain_lion
+    sha1 "514e7a7efe25016899f56053338e2100ffea2dce" => :lion
   end
+
+  head 'https://github.com/antirez/redis.git', :branch => 'unstable'
 
   fails_with :llvm do
     build 2334
@@ -56,7 +56,7 @@ class Redis < Formula
         <string>#{plist_name}</string>
         <key>ProgramArguments</key>
         <array>
-          <string>#{opt_prefix}/bin/redis-server</string>
+          <string>#{opt_bin}/redis-server</string>
           <string>#{etc}/redis.conf</string>
         </array>
         <key>RunAtLoad</key>
@@ -70,5 +70,9 @@ class Redis < Formula
       </dict>
     </plist>
     EOS
+  end
+
+  test do
+    system "#{bin}/redis-server", "--test-memory", "2"
   end
 end

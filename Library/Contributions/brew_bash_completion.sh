@@ -61,14 +61,19 @@ __brew_complete_formulae ()
 {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local lib=$(brew --repository)/Library
+    local taps=${lib}/Taps
     local ff=$(\ls ${lib}/Formula 2>/dev/null | sed 's/\.rb//g')
-    local af=$(\ls ${lib}/Aliases 2>/dev/null | sed 's/\.rb//g')
-    local tf tap
+    local af=$(\ls ${lib}/Aliases 2>/dev/null)
+    local tf file
 
-    for dir in $(\ls ${lib}/Taps 2>/dev/null); do
-        tap="$(echo "$dir" | sed 's|-|/|g')"
-        tf="$tf $(\ls -1R "${lib}/Taps/${dir}" 2>/dev/null |
-                  grep '.\+.rb' | sed -E 's|(.+)\.rb|'"${tap}"'/\1|g')"
+    for file in ${taps}/*/*/*.rb ${taps}/*/*/Formula/*.rb ${taps}/*/*/HomebrewFormula/*.rb; do
+        [ -f "$file" ] || continue
+        file=${file/"Formula/"/}
+        file=${file/"HomebrewFormula/"/}
+        file=${file#${lib}/Taps/}
+        file=${file%.rb}
+        file=${file/homebrew-/}
+        tf="${tf} ${file}"
     done
 
     COMPREPLY=($(compgen -W "$ff $af $tf" -- "$cur"))
@@ -88,9 +93,35 @@ __brew_complete_outdated ()
     COMPREPLY=($(compgen -W "$od" -- "$cur"))
 }
 
+__brew_complete_versions ()
+{
+    local formula="$1"
+    local versions=$(brew list --versions "$formula")
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    COMPREPLY=($(compgen -W "$versions" -X "$formula" -- "$cur"))
+}
+
+_brew_switch ()
+{
+    case "$COMP_CWORD" in
+    2)  __brew_complete_installed ;;
+    3)  __brew_complete_versions "${COMP_WORDS[COMP_CWORD-1]}" ;;
+    *)  ;;
+    esac
+}
+
 __brew_complete_tapped ()
 {
-    __brewcomp "$(\ls $(brew --repository)/Library/Taps 2>/dev/null | sed 's/-/\//g')"
+    local taplib=$(brew --repository)/Library/Taps
+    local dir taps
+
+    for dir in ${taplib}/*/*; do
+        [ -d "$dir" ] || continue
+        dir=${dir#${taplib}/}
+        dir=${dir/homebrew-/}
+        taps="$taps $dir"
+    done
+    __brewcomp "$taps"
 }
 
 _brew_complete_tap ()
@@ -102,16 +133,18 @@ _brew_complete_tap ()
         return
         ;;
     esac
-    __brew_complete_taps
 }
 
-__brew_complete_taps ()
+_brew_bottle ()
 {
-    if [[ -z "$__brew_cached_taps" ]]; then
-        __brew_cached_taps="$(brew ls-taps)"
-    fi
-
-    __brewcomp "$__brew_cached_taps"
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+    --*)
+        __brewcomp "--merge --rb --write"
+        return
+        ;;
+    esac
+    __brew_complete_installed
 }
 
 _brew_cleanup ()
@@ -174,6 +207,8 @@ _brew_fetch ()
         __brewcomp "
           --deps --force
           --devel --HEAD
+          --build-from-source --force-bottle --build-bottle
+          --retry
           $(brew options --compact "$prv" 2>/dev/null)
           "
         return
@@ -187,7 +222,7 @@ _brew_info ()
     local cur="${COMP_WORDS[COMP_CWORD]}"
     case "$cur" in
     --*)
-        __brewcomp "--all --github"
+        __brewcomp "--all --github --json=v1"
         return
         ;;
     esac
@@ -202,22 +237,16 @@ _brew_install ()
     case "$cur" in
     --*)
         if __brewcomp_words_include "--interactive"; then
-            __brewcomp "
-                --devel
-                --force
-                --git
-                --HEAD
-                "
+            __brewcomp "--devel --git --HEAD"
         else
             __brewcomp "
-                --build-from-source
+                --build-from-source --build-bottle --force-bottle
                 --debug
                 --devel
-                --force
-                --fresh
                 --HEAD
                 --ignore-dependencies
                 --interactive
+                --only-dependencies
                 --verbose
                 $(brew options --compact "$prv" 2>/dev/null)
                 "
@@ -238,6 +267,17 @@ _brew_link ()
         ;;
     esac
     __brew_complete_installed
+}
+
+_brew_linkapps ()
+{
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    case "$cur" in
+    --*)
+        __brewcomp "--local"
+        return
+        ;;
+    esac
 }
 
 _brew_list ()
@@ -341,6 +381,24 @@ _brew_update ()
     esac
 }
 
+_brew_upgrade ()
+{
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local prv=$(__brewcomp_prev)
+
+    case "$cur" in
+    --*)
+        __brewcomp "
+            --build-from-source --build-bottle --force-bottle
+            --debug
+            --verbose
+            "
+        return
+        ;;
+    esac
+    __brew_complete_outdated
+}
+
 _brew_uses ()
 {
     local cur="${COMP_WORDS[COMP_CWORD]}"
@@ -440,7 +498,7 @@ _brew ()
     --cache|--cellar|--prefix)  __brew_complete_formulae ;;
     audit|cat|edit|home)        __brew_complete_formulae ;;
     test|unlink)                __brew_complete_installed ;;
-    upgrade)                    __brew_complete_outdated ;;
+    bottle)                     _brew_bottle ;;
     cleanup)                    _brew_cleanup ;;
     create)                     _brew_create ;;
     deps)                       _brew_deps ;;
@@ -448,9 +506,9 @@ _brew ()
     diy|configure)              _brew_diy ;;
     fetch)                      _brew_fetch ;;
     info|abv)                   _brew_info ;;
-    install|instal)             _brew_install ;;
-    reinstall|reinstal)         _brew_install ;;
+    install|instal|reinstall)   _brew_install ;;
     link|ln)                    _brew_link ;;
+    linkapps)                   _brew_linkapps ;;
     list|ls)                    _brew_list ;;
     log)                        _brew_log ;;
     missing)                    __brew_complete_formulae ;;
@@ -458,11 +516,13 @@ _brew ()
     outdated)                   _brew_outdated ;;
     pin)                        __brew_complete_formulae ;;
     search|-S)                  _brew_search ;;
+    switch)                     _brew_switch ;;
     tap)                        _brew_complete_tap ;;
     uninstall|remove|rm)        _brew_uninstall ;;
     unpin)                      __brew_complete_formulae ;;
     untap)                      __brew_complete_tapped ;;
     update)                     _brew_update ;;
+    upgrade)                    _brew_upgrade ;;
     uses)                       _brew_uses ;;
     versions)                   _brew_versions ;;
     *)                          ;;

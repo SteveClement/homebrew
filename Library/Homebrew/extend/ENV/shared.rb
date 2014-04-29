@@ -1,3 +1,5 @@
+require 'formula'
+
 module SharedEnvExtension
   CC_FLAG_VARS = %w{CFLAGS CXXFLAGS OBJCFLAGS OBJCXXFLAGS}
   FC_FLAG_VARS = %w{FCFLAGS FFLAGS}
@@ -6,7 +8,7 @@ module SharedEnvExtension
   GNU_GCC_VERSIONS = (3..9)
   GNU_GCC_REGEXP = /gcc-(4\.[3-9])/
 
-  COMPLER_ALIASES = {'gcc' => 'gcc-4.2', 'llvm' => 'llvm-gcc'}
+  COMPILER_ALIASES = {'gcc' => 'gcc-4.2', 'llvm' => 'llvm-gcc'}
   COMPILER_SYMBOL_MAP = { 'gcc-4.0'  => :gcc_4_0,
                           'gcc-4.2'  => :gcc,
                           'llvm-gcc' => :llvm,
@@ -53,6 +55,12 @@ module SharedEnvExtension
 
   def prepend_path key, path
     prepend key, path, File::PATH_SEPARATOR if File.directory? path
+  end
+
+  def prepend_create_path key, path
+    path = Pathname.new(path) unless path.is_a? Pathname
+    path.mkpath
+    prepend_path key, path
   end
 
   def remove keys, value
@@ -102,10 +110,8 @@ module SharedEnvExtension
     elsif ARGV.include? '--use-clang'
       :clang
     elsif self['HOMEBREW_CC']
-      cc = COMPLER_ALIASES.fetch(self['HOMEBREW_CC'], self['HOMEBREW_CC'])
-      COMPILER_SYMBOL_MAP.fetch(cc) do |invalid|
-        MacOS.default_compiler
-      end
+      cc = COMPILER_ALIASES.fetch(self['HOMEBREW_CC'], self['HOMEBREW_CC'])
+      COMPILER_SYMBOL_MAP.fetch(cc) { MacOS.default_compiler }
     else
       MacOS.default_compiler
     end
@@ -116,11 +122,7 @@ module SharedEnvExtension
   # If no valid compiler is found, raises an exception.
   def validate_cc!(formula)
     if formula.fails_with? ENV.compiler
-      begin
-        send CompilerSelector.new(formula).compiler
-      rescue CompilerSelectionError => e
-        raise e.message
-      end
+      send CompilerSelector.new(formula).compiler
     end
   end
 
@@ -159,11 +161,17 @@ module SharedEnvExtension
         EOS
       end
 
-    elsif (gfortran = which('gfortran', ORIGINAL_PATHS.join(File::PATH_SEPARATOR)))
-      ohai "Using Homebrew-provided fortran compiler."
-      puts "This may be changed by setting the FC environment variable."
-      self['FC'] = self['F77'] = gfortran
-      flags = FC_FLAG_VARS
+    else
+      if (gfortran = which('gfortran', (HOMEBREW_PREFIX/'bin').to_s))
+        ohai "Using Homebrew-provided fortran compiler."
+      elsif (gfortran = which('gfortran', ORIGINAL_PATHS.join(File::PATH_SEPARATOR)))
+        ohai "Using a fortran compiler found at #{gfortran}."
+      end
+      if gfortran
+        puts "This may be changed by setting the FC environment variable."
+        self['FC'] = self['F77'] = gfortran
+        flags = FC_FLAG_VARS
+      end
     end
 
     flags.each { |key| self[key] = cflags }
@@ -174,16 +182,32 @@ module SharedEnvExtension
   def ld64
     ld64 = Formula.factory('ld64')
     self['LD'] = ld64.bin/'ld'
-    append "LDFLAGS", "-B#{ld64.bin.to_s+"/"}"
+    append "LDFLAGS", "-B#{ld64.bin}/"
+  end
+
+  def gcc_version_formula(version)
+    gcc_formula = Formulary.factory("gcc")
+    return gcc_formula if gcc_formula.version.to_s.include?(version)
+
+    gcc_name = 'gcc' + version.delete('.')
+    Formulary.factory(gcc_name)
   end
 
   def warn_about_non_apple_gcc(gcc)
-    opoo "Experimental support for non-Apple GCC enabled. Some builds may fail!"
+    gcc_name = 'gcc' + gcc.delete('.')
 
     begin
-      gcc_name = 'gcc' + gcc.delete('.')
-      gcc = Formulary.factory(gcc_name)
-      if !gcc.opt_prefix.exist?
+      gcc_formula = gcc_version_formula(gcc)
+      if gcc_formula.name == "gcc"
+        return if gcc_formula.opt_prefix.exist?
+        raise <<-EOS.undent
+        The Homebrew GCC was not installed.
+        You must:
+          brew install gcc
+        EOS
+      end
+
+      if !gcc_formula.opt_prefix.exist?
         raise <<-EOS.undent
         The requested Homebrew GCC, #{gcc_name}, was not installed.
         You must:

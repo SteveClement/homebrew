@@ -2,17 +2,13 @@ require 'formula'
 
 class Justniffer < Formula
   homepage 'http://justniffer.sourceforge.net/'
-  url 'http://downloads.sourceforge.net/project/justniffer/justniffer/justniffer%200.5.11/justniffer_0.5.11.tar.gz'
+  url 'https://downloads.sourceforge.net/project/justniffer/justniffer/justniffer%200.5.11/justniffer_0.5.11.tar.gz'
   sha1 '3f3222361794a6f79f47567753550995c318a037'
 
   depends_on "boost"
 
   fails_with :clang do
-    build 425
-    cause <<-EOS.undent
-          Symbols declared inline in headers are then expected by the linker.
-          Probably declaring them static would fix it properly.
-          EOS
+    cause "Missing ext/stdio_filebuf.h; this is a GCC-specific header"
   end
 
   # Patch lib/libnids-1.21_patched/configure.gnu so that CFLAGS and/or
@@ -31,9 +27,7 @@ class Justniffer < Formula
   # I submitted this patch to the upstream author, Oreste Notelli, on
   # 2011-12-22, so this patch will probably not be necessary with future
   # justniffer versions after 0.5.11.
-  def patches
-    DATA
-  end
+  patch :DATA
 
   def install
     system "./configure", "--prefix=#{prefix}"

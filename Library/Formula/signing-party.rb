@@ -8,8 +8,15 @@ end
 
 class SigningParty < Formula
   homepage 'http://pgp-tools.alioth.debian.org/'
-  url 'http://ftp.debian.org/debian/pool/main/s/signing-party/signing-party_1.1.4.orig.tar.gz'
-  sha1 '092b7d644b7a8a8d2e82fd6ddb453ca58020ed31'
+  url 'http://ftp.debian.org/debian/pool/main/s/signing-party/signing-party_1.1.5.orig.tar.gz'
+  sha1 '79b4aae0b8c23adda8a6438138154f3fb8d348ea'
+
+  option 'with-rename-pgpring', 'Install pgpring as pgppubring to avoid conflicting with mutt'
+
+  if build.without? 'rename-pgpring'
+    conflicts_with 'mutt',
+      :because => 'mutt installs a private copy of pgpring'
+  end
 
   depends_on GnupgInstalled
   depends_on 'dialog'
@@ -20,10 +27,8 @@ class SigningParty < Formula
   depends_on 'GnuPG::Interface' => :perl
 
   # gpgparticipants data on OS X behaves differently from linux version
-  # https://github.com/mxcl/homebrew/pull/21628
-  def patches
-    DATA
-  end
+  # https://github.com/Homebrew/homebrew/pull/21628
+  patch :DATA
 
   def install
     # gpgdir and gpgwrap are not included as they have their own homepages
@@ -77,8 +82,18 @@ class SigningParty < Formula
 
     cd 'keyanalyze' do
       system "make"
-      bin.install 'keyanalyze', 'process_keys', 'pgpring/pgpring'
-      man1.install 'keyanalyze.1', 'process_keys.1', 'pgpring/pgpring.1'
+      if build.with? 'rename-pgpring'
+        # Install pgpring as pgppubring to avoid conflicting with Mutt.
+        # Reflect the installed name in manpages.
+        inreplace %w(keyanalyze.1 pgpring/pgpring.1 process_keys.1), /pgpring/, "pgppubring"
+        bin.install 'pgpring/pgpring' => 'pgppubring'
+        man1.install 'pgpring/pgpring.1' => 'pgppubring.1'
+      else
+        bin.install 'pgpring/pgpring'
+        man1.install 'pgpring/pgpring.1'
+      end
+      bin.install 'keyanalyze', 'process_keys'
+      man1.install 'keyanalyze.1', 'process_keys.1'
     end
 
     cd 'keylookup' do

@@ -8,13 +8,12 @@ require 'version'
 class Resource
   include FileUtils
 
-  attr_reader :name
   attr_reader :checksum, :mirrors, :specs, :using
-  attr_writer :url, :checksum, :version
+  attr_writer :url, :checksum, :version, :download_strategy
 
   # Formula name must be set after the DSL, as we have no access to the
   # formula name before initialization of the formula
-  attr_accessor :owner
+  attr_accessor :name, :owner
 
   def initialize name=nil, &block
     @name = name
@@ -61,7 +60,8 @@ class Resource
       downloader.stage
       if block_given?
         yield self
-      else
+      elsif target
+        target = Pathname.new(target) unless target.is_a? Pathname
         target.install Dir['*']
       end
     end
@@ -78,23 +78,21 @@ class Resource
     # Ensure the cache exists
     HOMEBREW_CACHE.mkpath
     downloader.fetch
+  rescue ErrorDuringExecution, CurlDownloadStrategyError => e
+    raise DownloadError.new(self, e)
+  else
     cached_download
   end
 
   def verify_download_integrity fn
     if fn.respond_to?(:file?) && fn.file?
+      ohai "Verifying #{fn.basename} checksum" if ARGV.verbose?
       fn.verify_checksum(checksum)
     end
   rescue ChecksumMissingError
     opoo "Cannot verify integrity of #{fn.basename}"
     puts "A checksum was not provided for this resource"
     puts "For your reference the SHA1 is: #{fn.sha1}"
-  rescue ChecksumMismatchError => e
-    e.advice = <<-EOS.undent
-    Archive: #{fn}
-    (To retry an incomplete download, remove the file above.)
-    EOS
-    raise e
   end
 
   Checksum::TYPES.each do |cksum|

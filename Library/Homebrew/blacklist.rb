@@ -3,22 +3,13 @@ def blacklisted? name
   when 'screen', /^rubygems?$/ then <<-EOS.undent
     Apple distributes #{name} with OS X, you can find it in /usr/bin.
     EOS
-  when 'libarchive', 'libpcap' then <<-EOS.undent
+  when 'libpcap' then <<-EOS.undent
     Apple distributes #{name} with OS X, you can find it in /usr/lib.
     EOS
   when 'libiconv' then <<-EOS.undent
     Apple distributes #{name} with OS X, you can find it in /usr/lib.
     Some build scripts fail to detect it correctly, please check existing
     formulae for solutions.
-    EOS
-  when 'libxml', 'libxlst' then <<-EOS.undent
-    Apple distributes #{name} with OS X, you can find it in /usr/lib.
-    However not all build scripts look for these hard enough, so you may need
-    to call ENV.libxml2 in your formula's install function.
-    EOS
-  when 'wxpython' then <<-EOS.undent
-    The Python bindings (import wx) for wxWidgets are installed by:
-        brew install wxwidgets
     EOS
   when 'tex', 'tex-live', 'texlive', 'latex' then <<-EOS.undent
     Installing TeX from source is weird and gross, requires a lot of patches,
@@ -32,7 +23,7 @@ def blacklisted? name
         sudo easy_install pip
     EOS
   when 'pil' then <<-EOS.undent
-    Instead of PIL, consider to `pip install pillow` or `brew install samueljohn/python/pillow`.
+    Instead of PIL, consider `pip install pillow` or `brew install Homebrew/python/pillow`.
     EOS
   when 'macruby' then <<-EOS.undent
     MacRuby works better when you install their package:
@@ -81,6 +72,16 @@ def blacklisted? name
       brew install leiningen
     and then follow the tutorial:
       https://github.com/technomancy/leiningen/blob/stable/doc/TUTORIAL.md
+    EOS
+  when 'rubinius' then <<-EOS.undent
+    Rubinius requires an existing Ruby 2.0 to bootstrap.
+    Doing this through Homebrew is error-prone. Instead, consider using
+    `ruby-build` to build and install specific versions of Ruby:
+        brew install ruby-build
+    EOS
+  when 'osmium' then <<-EOS.undent
+    The creator of Osmium requests that it not be packaged and that people
+    use the GitHub master branch instead.
     EOS
   end
 end

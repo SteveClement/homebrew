@@ -2,22 +2,21 @@ require 'formula'
 
 class Libnids < Formula
   homepage 'http://libnids.sourceforge.net/'
-  url 'http://downloads.sourceforge.net/project/libnids/libnids/1.24/libnids-1.24.tar.gz'
+  url 'https://downloads.sourceforge.net/project/libnids/libnids/1.24/libnids-1.24.tar.gz'
   sha1 '9a421df05cefdc4f5f7db95efc001b3c2b5249ce'
 
   option "disable-libnet", "Don't include code requiring libnet"
   option "disable-libglib", "Don't use glib2 for multiprocessing support"
 
   depends_on 'pkg-config' => :build
+  depends_on :autoconf
   depends_on :automake
   depends_on :libtool
   depends_on 'libnet' unless build.include? "disable-libnet"
   depends_on 'glib' unless build.include? "disable-libglib"
 
   # Patch fixes -soname and .so shared library issues. Unreported.
-  def patches
-    DATA
-  end
+  patch :DATA
 
   def install
     # autoreconf the old 2005 era code for sanity.

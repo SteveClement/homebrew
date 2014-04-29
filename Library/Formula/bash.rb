@@ -2,21 +2,25 @@ require 'formula'
 
 class Bash < Formula
   homepage 'http://www.gnu.org/software/bash/'
-  url 'http://ftpmirror.gnu.org/bash/bash-4.2.tar.gz'
-  mirror 'http://ftp.gnu.org/gnu/bash/bash-4.2.tar.gz'
-  sha256 'a27a1179ec9c0830c65c6aa5d7dab60f7ce1a2a608618570f96bfa72e95ab3d8'
-  version '4.2.45'
+
+  stable do
+    url "http://ftpmirror.gnu.org/bash/bash-4.3.tar.gz"
+    mirror "http://ftp.gnu.org/gnu/bash/bash-4.3.tar.gz"
+    sha256 "afc687a28e0e24dc21b988fa159ff9dbcf6b7caa92ade8645cc6d5605cd024d4"
+    version "4.3.11"
+
+    # Vendor the patches. The mirrors are unreliable for getting the patches,
+    # and the more patches there are, the more unreliable they get. Upstream
+    # patches can be found in: http://git.savannah.gnu.org/cgit/bash.git
+    patch do
+      url "https://gist.githubusercontent.com/jacknagel/10594061/raw/65a32e9329e0d1198b06e21542de6103bcc3549e/bash-4.3-001-011.patch"
+      sha1 "803fd4452aa071bc87b86a1d38d86acba4dc2a62"
+    end
+  end
 
   head 'git://git.savannah.gnu.org/bash.git'
 
   depends_on 'readline'
-
-  # Vendor the patches. The mirrors are unreliable for getting the patches,
-  # and the more patches there are, the more unreliable they get. Upstream
-  # patches can be found in: http://ftpmirror.gnu.org/bash/bash-4.2-patches
-  def patches
-    { :p0 => "https://gist.github.com/jacknagel/4008180/raw/1509a257060aa94e5349250306cce9eb884c837d/bash-4.2-001-045.patch" }
-  end unless build.head?
 
   def install
     # When built with SSH_SOURCE_BASHRC, bash will source ~/.bashrc when
@@ -35,5 +39,11 @@ class Bash < Formula
     In order to use this build of bash as your login shell,
     it must be added to /etc/shells.
     EOS
+  end
+
+  test do
+    output = `#{bin}/bash -c "echo hello"`.strip
+    assert_equal "hello", output
+    assert_equal 0, $?.exitstatus
   end
 end

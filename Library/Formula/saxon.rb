@@ -2,9 +2,9 @@ require 'formula'
 
 class Saxon < Formula
   homepage "http://saxon.sourceforge.net"
-  url "http://downloads.sourceforge.net/project/saxon/Saxon-HE/9.5/SaxonHE9-5-1-1J.zip"
-  sha1 '5b5ff1f047d5206d4a70e705358dd5f7c9feaf78'
-  version "9.5.1.1"
+  url 'https://downloads.sourceforge.net/project/saxon/Saxon-HE/9.5/SaxonHE9-5-1-5J.zip'
+  sha1 'bb8476866cacb72e5567bdfc246570e7f0986e48'
+  version '9.5.1.5'
 
   def install
     libexec.install Dir["*"]

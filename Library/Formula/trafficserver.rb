@@ -2,14 +2,14 @@ require 'formula'
 
 class Trafficserver < Formula
   homepage 'http://trafficserver.apache.org/'
-  url 'http://www.apache.org/dyn/closer.cgi?path=trafficserver/trafficserver-4.0.2.tar.bz2'
-  mirror 'http://archive.apache.org/dist/trafficserver/trafficserver-4.0.2.tar.bz2'
-  sha1 '07af0f62eec0a075f62088cce9a6adf26b48b155'
+  url 'http://www.apache.org/dyn/closer.cgi?path=trafficserver/trafficserver-4.2.0.tar.bz2'
+  mirror 'http://archive.apache.org/dist/trafficserver/trafficserver-4.2.0.tar.bz2'
+  sha1 'feb1d45fecccbc00fa988e768909a6664a43a354'
 
   depends_on 'pcre'
 
   #remove some amd64 compiler options that fail on Snow Leopard
-  def patches; DATA; end if MacOS.version == :snow_leopard
+  patch :DATA if MacOS.version == :snow_leopard
 
   def install
     # Needed for correct ./configure detections.
@@ -23,7 +23,7 @@ class Trafficserver < Formula
     system "make install"
   end
 
-  def test
+  test do
     system "#{bin}/trafficserver", "status"
   end
 end

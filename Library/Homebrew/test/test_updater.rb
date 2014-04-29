@@ -85,9 +85,20 @@ class UpdaterTests < Test::Unit::TestCase
     perform_update(fixture('update_git_diff_output_with_tapped_formulae_changes'))
     assert @updater.expectations_met?
     assert_equal [
-      Pathname('someuser-sometap/Formula/antiword.rb'),
-      Pathname('someuser-sometap/HomebrewFormula/lua.rb'),
-      Pathname('someuser-sometap/custom-formula.rb'),
+      HOMEBREW_LIBRARY.join("Taps", "someuser/sometap/Formula/antiword.rb"),
+      HOMEBREW_LIBRARY.join("Taps", "someuser/sometap/HomebrewFormula/lua.rb"),
+      HOMEBREW_LIBRARY.join("Taps", "someuser/sometap/custom-formula.rb"),
     ], @report.tapped_formula_for(:A)
+  end
+
+  def test_update_homebrew_with_removed_formulae
+    perform_update(fixture('update_git_diff_output_with_removed_formulae'))
+    assert @updater.expectations_met?
+    assert_equal %w{libgsasl}, @report.select_formula(:D)
+  end
+
+  def test_update_homebrew_with_changed_filetype
+    perform_update(fixture('update_git_diff_output_with_changed_filetype'))
+    assert @updater.expectations_met?
   end
 end

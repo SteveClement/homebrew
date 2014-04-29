@@ -1,54 +1,42 @@
-require 'formula'
+require "formula"
 
 class Phantomjs < Formula
-  homepage 'http://www.phantomjs.org/'
-  url 'https://phantomjs.googlecode.com/files/phantomjs-1.9.2-source.zip'
-  sha1 '08559acdbbe04e963632bc35e94c1a9a082b6da1'
+  homepage "http://www.phantomjs.org/"
+  url "https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-1.9.7-source.zip"
+  sha1 "124b017d493d5ccabd22afaf078d0650ac048840"
 
   bottle do
     cellar :any
-    revision 1
-    sha1 '154fa5b1ea8ce416bfd6957385484450dcea070f' => :mavericks
-    sha1 'f90ab68692392269973ba20cd76fda9f9ce22378' => :mountain_lion
-    sha1 'a133761fffb7164b97c80f8aee4a419950e2f921' => :lion
+    sha1 "fb82891b5d63de81a89c7b5b41b8aeba39dec470" => :mavericks
+    sha1 "042dd2341a1140cdcd575e08aa432ed659e3f00e" => :mountain_lion
+    sha1 "575af708d7e5ef6e39e90766ffd2bf97b6c4b51b" => :lion
   end
 
-  def patches
-    DATA
+  patch do
+    url "https://github.com/ariya/phantomjs/commit/fe6a96.diff"
+    sha1 "d3efd38e0f3f0da08530d0bf603ea72ebdf06b78"
   end
 
   def install
     inreplace 'src/qt/preconfig.sh', '-arch x86', '-arch x86_64' if MacOS.prefer_64_bit?
     args = ['--confirm', '--qt-config']
-    # Fix Clang/LLVM 3DNow! intrinsic failure.
-    if MacOS.version >= :lion
-      args << '-no-3dnow'
-    else
-      args << '-no-3dnow -no-ssse3'
-    end
+    # we have to disable these to avoid triggering Qt optimization code
+    # that will fail in superenv (in --env=std, Qt seems aware of this)
+    args << '-no-3dnow -no-ssse3' if superenv?
     system './build.sh', *args
     bin.install 'bin/phantomjs'
     (share+'phantomjs').install 'examples'
   end
+
+  test do
+    path = testpath/"test.js"
+    path.write <<-EOS
+      console.log('hello');
+      phantom.exit();
+    EOS
+
+    output = `#{bin}/phantomjs #{path}`.strip
+    assert_equal "hello", output
+    assert_equal 0, $?.exitstatus
+  end
 end
-__END__
-diff --git a/src/qt/src/gui/kernel/qt_cocoa_helpers_mac_p.h b/src/qt/src/gui/kernel/qt_cocoa_helpers_mac_p.h
-index c068234..90d2ca0 100644
---- a/src/qt/src/gui/kernel/qt_cocoa_helpers_mac_p.h
-+++ b/src/qt/src/gui/kernel/qt_cocoa_helpers_mac_p.h
-@@ -110,6 +110,7 @@
- #include "private/qt_mac_p.h"
-
- struct HIContentBorderMetrics;
-+struct TabletProximityRec;
-
- #ifdef Q_WS_MAC32
- typedef struct _NSPoint NSPoint; // Just redefine here so I don't have to pull in all of Cocoa.
-@@ -155,7 +156,6 @@ bool qt_dispatchKeyEvent(void * /*NSEvent * */ keyEvent, QWidget *widgetToGetEve
- void qt_dispatchModifiersChanged(void * /*NSEvent * */flagsChangedEvent, QWidget *widgetToGetEvent);
- bool qt_mac_handleTabletEvent(void * /*QCocoaView * */view, void * /*NSEvent * */event);
- inline QApplication *qAppInstance() { return static_cast<QApplication *>(QCoreApplication::instance()); }
--struct ::TabletProximityRec;
- void qt_dispatchTabletProximityEvent(const ::TabletProximityRec &proxRec);
- Qt::KeyboardModifiers qt_cocoaModifiers2QtModifiers(ulong modifierFlags);
- Qt::KeyboardModifiers qt_cocoaDragOperation2QtModifiers(uint dragOperations);

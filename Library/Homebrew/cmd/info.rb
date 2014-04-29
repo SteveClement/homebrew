@@ -20,18 +20,12 @@ module Homebrew extend self
 
   def print_info
     if ARGV.named.empty?
-      if ARGV.include? "--all"
-        Formula.each do |f|
-          info_formula f
-          puts '---'
-        end
-      elsif HOMEBREW_CELLAR.exist?
+      if HOMEBREW_CELLAR.exist?
         puts "#{HOMEBREW_CELLAR.children.length} kegs, #{HOMEBREW_CELLAR.abv}"
       end
-    elsif valid_url ARGV[0]
-      info_formula Formula.factory(ARGV.shift)
     else
-      ARGV.named.each do |f|
+      ARGV.named.each_with_index do |f,i|
+        puts unless i == 0
         begin
           info_formula Formula.factory(f)
         rescue FormulaUnavailableError
@@ -65,18 +59,14 @@ module Homebrew extend self
   end
 
   def github_info f
-    path = f.path.realpath
-
-    if path.to_s =~ HOMEBREW_TAP_PATH_REGEX
+    if f.path.to_s =~ HOMEBREW_TAP_PATH_REGEX
       user = $1
-      repo = "homebrew-#$2"
+      repo = $2
       path = $3
     else
-      path.parent.cd do
-        user = github_fork
-      end
+      user = f.path.parent.cd { github_fork }
       repo = "homebrew"
-      path = "Library/Formula/#{path.basename}"
+      path = "Library/Formula/#{f.path.basename}"
     end
 
     "https://github.com/#{user}/#{repo}/commits/master/#{path}"
@@ -84,10 +74,19 @@ module Homebrew extend self
 
   def info_formula f
     specs = []
-    stable = "stable #{f.stable.version}" if f.stable
-    stable += " (bottled)" if f.bottle
-    specs << stable if stable
-    specs << "devel #{f.devel.version}" if f.devel
+
+    if stable = f.stable
+      s = "stable #{stable.version}"
+      s += " (bottled)" if stable.bottled?
+      specs << s
+    end
+
+    if devel = f.devel
+      s = "devel #{devel.version}"
+      s += " (bottled)" if devel.bottled?
+      specs << s
+    end
+
     specs << "HEAD" if f.head
 
     puts "#{f.name}: #{specs*', '}#{' (pinned)' if f.pinned?}"
@@ -122,7 +121,7 @@ module Homebrew extend self
       ohai "Dependencies"
       %w{build required recommended optional}.map do |type|
         deps = f.deps.send(type)
-        puts "#{type.capitalize}: #{deps*', '}" unless deps.empty?
+        puts "#{type.capitalize}: #{decorate_dependencies deps}" unless deps.empty?
       end
     end
 
@@ -136,10 +135,26 @@ module Homebrew extend self
     ohai 'Caveats', c.caveats unless c.empty?
   end
 
-  private
+  def decorate_dependencies dependencies
+    # necessary for 1.8.7 unicode handling since many installs are on 1.8.7
+    tick = ["2714".hex].pack("U*")
+    cross = ["2718".hex].pack("U*")
 
-  def valid_url u
-    u[0..6] == 'http://' or u[0..7] == 'https://' or u[0..5] == 'ftp://'
+    deps_status = dependencies.collect do |dep|
+      if dep.installed?
+        color = Tty.green
+        symbol = tick
+      else
+        color = Tty.red
+        symbol = cross
+      end
+      if ENV['HOMEBREW_NO_EMOJI']
+        colored_dep = "#{color}#{dep}"
+      else
+        colored_dep = "#{dep} #{color}#{symbol}"
+      end
+      "#{colored_dep}#{Tty.reset}"
+    end
+    deps_status * ", "
   end
-
 end

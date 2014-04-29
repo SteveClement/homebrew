@@ -16,19 +16,33 @@ $:.unshift(HOMEBREW_LIBRARY_PATH + '/vendor')
 $:.unshift(HOMEBREW_LIBRARY_PATH)
 require 'global'
 
-case ARGV.first when '-h', '--help', '--usage', '-?', 'help', nil
+if ARGV.help?
   require 'cmd/help'
-  puts Homebrew.help_s
-  exit ARGV.first ? 0 : 1
-when '--version'
+  puts ARGV.usage
+  exit ARGV.any? ? 0 : 1
+elsif ARGV.version?
   puts HOMEBREW_VERSION
   exit 0
-when '-v'
+elsif ARGV.first == '-v'
   puts "Homebrew #{HOMEBREW_VERSION}"
   # Shift the -v to the end of the parameter list
   ARGV << ARGV.shift
   # If no other arguments, just quit here.
   exit 0 if ARGV.length == 1
+end
+
+# Check for bad xcode-select before anything else, because `doctor` and
+# many other things will hang
+# Note that this bug was fixed in 10.9
+if OS.mac? && MacOS.version < :mavericks && MacOS::Xcode.folder == "/"
+  odie <<-EOS.undent
+  Your xcode-select path is currently set to '/'.
+  This causes the `xcrun` tool to hang, and can render Homebrew unusable.
+  If you are using Xcode, you should:
+    sudo xcode-select -switch /Applications/Xcode.app
+  Otherwise, you should:
+    sudo rm -rf /usr/share/xcode-select
+  EOS
 end
 
 case HOMEBREW_PREFIX.to_s when '/', '/usr'
@@ -95,7 +109,7 @@ begin
     end
     exec "brew-#{cmd}", *ARGV
   elsif require? which("brew-#{cmd}.rb").to_s
-    exit 0
+    exit Homebrew.failed? ? 1 : 0
   else
     onoe "Unknown command: #{cmd}"
     exit 1

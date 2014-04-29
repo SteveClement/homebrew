@@ -2,33 +2,29 @@ require 'formula'
 
 class GitCola < Formula
   homepage 'http://git-cola.github.io/'
-  url 'https://github.com/git-cola/git-cola/archive/v1.9.1.tar.gz'
-  sha1 '11f32b43700779583eec06054a24160682a5349e'
+  url 'https://github.com/git-cola/git-cola/archive/v2.0.2.tar.gz'
+  sha1 'e3357ca8dc6bce1e92f5195bbefc0a82edbff262'
 
   head 'https://github.com/git-cola/git-cola.git'
 
   option 'with-docs', "Build man pages using asciidoc and xmlto"
 
-  depends_on :python
   depends_on 'pyqt'
 
-  if build.include? 'with-docs'
+  if build.with? "docs"
     # these are needed to build man pages
     depends_on 'asciidoc'
     depends_on 'xmlto'
   end
 
   def install
-    python do
-      # The python do block creates the PYTHONPATH and temp. site-packages
-      system "make", "prefix=#{prefix}", "install"
+    system "make", "prefix=#{prefix}", "install"
 
-      if build.include? 'with-docs'
-        system "make", "-C", "share/doc/git-cola",
-                       "-f", "Makefile.asciidoc",
-                       "prefix=#{prefix}",
-                       "install", "install-html"
-      end
+    if build.with? "docs"
+      system "make", "-C", "share/doc/git-cola",
+                     "-f", "Makefile.asciidoc",
+                     "prefix=#{prefix}",
+                     "install", "install-html"
     end
   end
 

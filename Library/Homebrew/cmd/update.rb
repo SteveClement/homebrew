@@ -1,6 +1,5 @@
 require 'cmd/tap'
 require 'cmd/untap'
-require 'tap_migrations'
 
 module Homebrew extend self
   def update
@@ -18,12 +17,11 @@ module Homebrew extend self
     cd HOMEBREW_REPOSITORY
     git_init_if_necessary
 
-    tapped_formulae = Dir['Library/Formula/*'].map do |formula|
-      path = Pathname.new formula
+    tapped_formulae = []
+    HOMEBREW_LIBRARY.join("Formula").children.each do |path|
       next unless path.symlink?
-      Pathname.new(path.realpath.to_s.gsub(/.*Taps\//, '')) rescue nil
+      tapped_formulae << path.resolved_path
     end
-    tapped_formulae.compact!
     unlink_tap_formula(tapped_formulae)
 
     report = Report.new
@@ -35,19 +33,22 @@ module Homebrew extend self
     end
     report.merge!(master_updater.report)
 
-    Dir["Library/Taps/*"].each do |tapd|
-      next unless File.directory?(tapd)
+    # rename Taps directories
+    # this procedure will be removed in the future if it seems unnecessasry
+    rename_taps_dir_if_necessary
 
-      cd tapd do
+    each_tap do |user, repo|
+      repo.cd do
+        updater = Updater.new
+
         begin
-          updater = Updater.new
           updater.pull!
+        rescue
+          onoe "Failed to update tap: #{user.basename}/#{repo.basename.sub("homebrew-", "")}"
+        else
           report.merge!(updater.report) do |key, oldval, newval|
             oldval.concat(newval)
           end
-        rescue
-          tapd =~ %r{^Library/Taps/(\w+)-(\w+)}
-          onoe "Failed to update tap: #$1/#$2"
         end
       end
     end
@@ -59,12 +60,11 @@ module Homebrew extend self
     # automatically tap any migrated formulae's new tap
     report.select_formula(:D).each do |f|
       next unless (HOMEBREW_CELLAR/f).exist?
-      tap_user, tap_repo = TAP_MIGRATIONS[f].split '/'
-      begin
-        install_tap tap_user, tap_repo
-      rescue AlreadyTappedError => e
-      end
-    end
+      migration = TAP_MIGRATIONS[f]
+      next unless migration
+      tap_user, tap_repo = migration.split '/'
+      install_tap tap_user, tap_repo
+    end if load_tap_migrations
 
     if report.empty?
       puts "Already up-to-date."
@@ -80,15 +80,58 @@ module Homebrew extend self
     if Dir['.git/*'].empty?
       safe_system "git init"
       safe_system "git config core.autocrlf false"
-      safe_system "git remote add origin https://github.com/mxcl/homebrew.git"
+      safe_system "git remote add origin https://github.com/Homebrew/homebrew.git"
       safe_system "git fetch origin"
       safe_system "git reset --hard origin/master"
+    end
+
+    if `git remote show origin -n` =~ /Fetch URL: \S+mxcl\/homebrew/
+      safe_system "git remote set-url origin https://github.com/Homebrew/homebrew.git"
+      safe_system "git remote set-url --delete origin .*mxcl\/homebrew.*"
     end
   rescue Exception
     FileUtils.rm_rf ".git"
     raise
   end
 
+  def rename_taps_dir_if_necessary
+    need_repair_taps = false
+    Dir["#{HOMEBREW_LIBRARY}/Taps/*/"].each do |tapd|
+      begin
+        tapd_basename = File.basename(tapd)
+
+        if File.directory?(tapd + "/.git")
+          if tapd_basename.include?("-")
+            # only replace the *last* dash: yes, tap filenames suck
+            user, repo = tapd_basename.reverse.sub("-", "/").reverse.split("/")
+
+            FileUtils.mkdir_p("#{HOMEBREW_LIBRARY}/Taps/#{user.downcase}")
+            FileUtils.mv(tapd, "#{HOMEBREW_LIBRARY}/Taps/#{user.downcase}/homebrew-#{repo.downcase}")
+            need_repair_taps = true
+
+            if tapd_basename.count("-") >= 2
+              opoo "Homebrew changed the structure of Taps like <someuser>/<sometap>. "\
+                + "So you may need to rename #{HOMEBREW_LIBRARY}/Taps/#{user.downcase}/homebrew-#{repo.downcase} manually."
+            end
+          else
+            opoo "Homebrew changed the structure of Taps like <someuser>/<sometap>. "\
+              "#{tapd} is incorrect name format. You may need to rename it like <someuser>/<sometap> manually."
+          end
+        end
+      rescue => ex
+        onoe ex.message
+        next # next tap directory
+      end
+    end
+
+    repair_taps if need_repair_taps
+  end
+
+  def load_tap_migrations
+    require 'tap_migrations'
+  rescue LoadError
+    false
+  end
 end
 
 class Updater
@@ -123,7 +166,7 @@ class Updater
   end
 
   # Matches raw git diff format (see `man git-diff-tree`)
-  DIFFTREE_RX = /^:[0-7]{6} [0-7]{6} [0-9a-fA-F]{40} [0-9a-fA-F]{40} ([ACDMR])\d{0,3}\t(.+?)(?:\t(.+))?$/
+  DIFFTREE_RX = /^:[0-7]{6} [0-7]{6} [0-9a-fA-F]{40} [0-9a-fA-F]{40} ([ACDMRTUX])\d{0,3}\t(.+?)(?:\t(.+))?$/
 
   def report
     map = Hash.new{ |h,k| h[k] = [] }
@@ -135,8 +178,7 @@ class Updater
           when :R then $3
           else $2
           end
-        path = Pathname.pwd.join(path).relative_path_from(HOMEBREW_REPOSITORY)
-        map[status] << path.to_s
+        map[status] << Pathname.pwd.join(path)
       end
     end
 
@@ -175,19 +217,19 @@ class Report < Hash
   end
 
   def tapped_formula_for key
-    fetch(key, []).map do |path|
-      case path when %r{^Library/Taps/(\w+-\w+/.*)}
-        relative_path = $1
-        if valid_formula_location?(relative_path)
-          Pathname.new(relative_path)
-        end
+    fetch(key, []).select do |path|
+      case path.relative_path_from(HOMEBREW_REPOSITORY).to_s
+      when %r{^Library/Taps/([\w_-]+/[\w_-]+/.*)}
+        valid_formula_location?($1)
+      else
+        false
       end
     end.compact
   end
 
   def valid_formula_location?(relative_path)
     ruby_file = /\A.*\.rb\Z/
-    parts = relative_path.split('/')[1..-1]
+    parts = relative_path.split('/')[2..-1]
     [
       parts.length == 1 && parts.first =~ ruby_file,
       parts.length == 2 && parts.first == 'Formula' && parts.last =~ ruby_file,
@@ -205,10 +247,11 @@ class Report < Hash
 
   def select_formula key
     fetch(key, []).map do |path|
-      case path when %r{^Library/Formula}
-        File.basename(path, ".rb")
-      when %r{^Library/Taps/(\w+)-(\w+)/(.*)\.rb}
-        "#$1/#$2/#{File.basename(path, '.rb')}"
+      case path.relative_path_from(HOMEBREW_REPOSITORY).to_s
+      when %r{^Library/Formula}
+        path.basename(".rb").to_s
+      when %r{^Library/Taps/([\w_-]+)/(homebrew-)?([\w_-]+)/(.*)\.rb}
+        "#$1/#$3/#{path.basename(".rb")}"
       end
     end.compact.sort
   end

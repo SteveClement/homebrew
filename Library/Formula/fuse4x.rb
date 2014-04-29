@@ -1,16 +1,19 @@
 require 'formula'
 
 class Fuse4x < Formula
-  homepage 'http://fuse4x.github.com'
+  homepage 'http://fuse4x.github.io'
   url 'https://github.com/fuse4x/fuse/archive/fuse4x_0_9_2.tar.gz'
   sha1 '3a9700f716eff930dcd2426772c642a09adcc73a'
 
   # Always use newer versions of these tools
+  depends_on 'autoconf' => :build
   depends_on 'automake' => :build
   depends_on 'libtool' => :build
 
   depends_on 'gettext'
   depends_on 'fuse4x-kext'
+
+  conflicts_with 'osxfuse', :because => 'both install `fuse.pc`'
 
   def install
     # Build universal if the hardware can handle it---otherwise 32 bit only

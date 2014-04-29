@@ -2,14 +2,15 @@ require 'formula'
 
 class SeleniumServerStandalone < Formula
   homepage 'http://seleniumhq.org/'
-  url 'http://selenium.googlecode.com/files/selenium-server-standalone-2.37.0.jar'
-  sha1 'fe8b7fcad6925b6d1c916e68850469e8ba67a6f9'
+  url 'http://selenium-release.storage.googleapis.com/2.41/selenium-server-standalone-2.41.0.jar'
+  sha1 '36ff5dbb6f9592d511935f65ff262f5c1a53fef8'
 
   def install
-    prefix.install "selenium-server-standalone-#{version}.jar"
+    libexec.install "selenium-server-standalone-#{version}.jar"
+    bin.write_jar_script libexec/"selenium-server-standalone-#{version}.jar", "selenium-server"
   end
 
-  plist_options :manual => "java -jar #{HOMEBREW_PREFIX}/opt/selenium-server-standalone/selenium-server-standalone-#{version}.jar -p 4444"
+  plist_options :manual => "selenium-server -p 4444"
 
   def plist; <<-EOS.undent
     <?xml version="1.0" encoding="UTF-8"?>
@@ -26,7 +27,7 @@ class SeleniumServerStandalone < Formula
       <array>
         <string>/usr/bin/java</string>
         <string>-jar</string>
-        <string>#{prefix}/selenium-server-standalone-#{version}.jar</string>
+        <string>#{libexec}/selenium-server-standalone-#{version}.jar</string>
         <string>-port</string>
         <string>4444</string>
       </array>

@@ -8,12 +8,10 @@ class Spidermonkey < Formula
 
   head 'https://hg.mozilla.org/tracemonkey/archive/tip.tar.gz'
 
+  conflicts_with 'narwhal', :because => 'both install a js binary'
+
   depends_on 'readline'
   depends_on 'nspr'
-
-  # spidermonkey builds using libstdc++ with clang in superenv
-  # TODO fix this under superenv
-  env :std
 
   def install
     # aparently this flag causes the build to fail for ivanvc on 10.5 with a
@@ -31,7 +29,8 @@ class Spidermonkey < Formula
       system "../js/src/configure", "--prefix=#{prefix}",
                                     "--enable-readline",
                                     "--enable-threadsafe",
-                                    "--with-system-nspr"
+                                    "--with-system-nspr",
+                                    "--enable-macos-target=#{MacOS.version}"
 
       inreplace "js-config", /JS_CONFIG_LIBS=.*?$/, "JS_CONFIG_LIBS=''"
       # These need to be in separate steps.
@@ -41,5 +40,14 @@ class Spidermonkey < Formula
       # Also install js REPL.
       bin.install "shell/js"
     end
+  end
+
+  test do
+    path = testpath/"test.js"
+    path.write "print('hello');"
+
+    output = `#{bin}/js #{path}`.strip
+    assert_equal "hello", output
+    assert_equal 0, $?.exitstatus
   end
 end

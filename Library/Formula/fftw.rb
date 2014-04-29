@@ -5,7 +5,15 @@ class Fftw < Formula
   url 'http://www.fftw.org/fftw-3.3.3.tar.gz'
   sha1 '11487180928d05746d431ebe7a176b52fe205cf9'
 
+  bottle do
+    cellar :any
+    sha1 "9aeaea9d8cfacda9b6b4a2be377e5cff1c639de6" => :mavericks
+    sha1 "d59acf1f5bd1ac955ab930fbbef2a2efc8ee3a55" => :mountain_lion
+    sha1 "272dc2ed950d7ddf59dee0eaf00499c7fd965f95" => :lion
+  end
+
   option "with-fortran", "Enable Fortran bindings"
+  option :universal
 
   depends_on :fortran => :optional
 
@@ -15,22 +23,24 @@ class Fftw < Formula
             "--prefix=#{prefix}",
             "--enable-threads",
             "--disable-dependency-tracking"]
+    simd_args = ["--enable-sse2"]
+    simd_args << "--enable-avx" if ENV.compiler == :clang and Hardware::CPU.avx? and !build.bottle?
 
-    args << "--disable-fortran" unless build.with? "fortran"
+    args << "--disable-fortran" if build.without? "fortran"
+
+    ENV.universal_binary if build.universal?
 
     # single precision
-    # enable-sse only works with single
-    system "./configure", "--enable-single",
-                          "--enable-sse",
-                          *args
+    # enable-sse2 and enable-avx works for both single and double precision
+    system "./configure", "--enable-single", *(args + simd_args)
     system "make install"
 
     # clean up so we can compile the double precision variant
     system "make clean"
 
     # double precision
-    # enable-sse2 only works with double precision (default)
-    system "./configure", "--enable-sse2", *args
+    # enable-sse2 and enable-avx works for both single and double precision
+    system "./configure", *(args + simd_args)
     system "make install"
 
     # clean up so we can compile the long-double precision variant

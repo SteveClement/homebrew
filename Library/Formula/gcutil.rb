@@ -2,15 +2,15 @@ require 'formula'
 
 class Gcutil < Formula
   homepage 'https://developers.google.com/compute/docs/gcutil/'
-  url 'https://google-compute-engine-tools.googlecode.com/files/gcutil-1.10.0.tar.gz'
-  sha1 'a9322892b6183adf726c2390e66a048bf8f064dc'
+  url 'https://dl.google.com/dl/cloudsdk/release/artifacts/gcutil-1.15.0.zip'
+  sha1 '3ef940bda17469e742f77f5c0918613c5377f058'
 
   def install
     libexec.install 'gcutil', 'lib'
     bin.install_symlink libexec/"gcutil"
   end
 
-  def test
+  test do
     system "#{bin}/gcutil", "version"
   end
 end

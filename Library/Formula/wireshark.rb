@@ -2,20 +2,32 @@ require 'formula'
 
 class Wireshark < Formula
   homepage 'http://www.wireshark.org'
-  url 'http://wiresharkdownloads.riverbed.com/wireshark/src/wireshark-1.10.2.tar.bz2'
-  mirror 'http://www.wireshark.org/download/src/wireshark-1.10.2.tar.bz2'
-  sha1 '1f8f877f17dea23e1cf2bafeef0f71323df43521'
+
+  stable do
+    url 'http://wiresharkdownloads.riverbed.com/wireshark/src/wireshark-1.10.6.tar.bz2'
+    mirror 'http://www.wireshark.org/download/src/wireshark-1.10.6.tar.bz2'
+    sha1 '081a2daf85e3257d7a2699e84a330712e3e5b9bb'
+
+    # Removes SDK checks that prevent the build from working on CLT-only systems
+    # Reported upstream: https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=9290
+    patch :DATA
+  end
 
   head do
-    url 'http://anonsvn.wireshark.org/wireshark/trunk/', :using => :svn
+    url 'https://code.wireshark.org/review/wireshark', :using => :git
 
     depends_on :autoconf
     depends_on :automake
     depends_on :libtool
   end
 
-  option 'with-x', 'Include X11 support'
+  devel do
+    url 'http://wiresharkdownloads.riverbed.com/wireshark/src/wireshark-1.11.2.tar.bz2'
+    sha1 'af2b03338819b300f621048398b49403675db49c'
+  end
+
   option 'with-qt', 'Use QT for GUI instead of GTK+'
+  option 'with-headers', 'Install Wireshark library headers for plug-in developemnt'
 
   depends_on 'pkg-config' => :build
 
@@ -30,23 +42,8 @@ class Wireshark < Formula
   depends_on 'pcre' => :optional
   depends_on 'portaudio' => :optional
   depends_on 'qt' => :optional
-
-  if build.with? 'x'
-    depends_on :x11
-    depends_on 'gtk+'
-  end
-
-  def patches
-    {
-      # This header has an enum with values already defined as
-      # as macros in /usr/include/sys/dirent.h
-      # Fixed upstream, should be in the next release.
-      :p0 => 'https://trac.macports.org/export/112336/trunk/dports/net/wireshark/files/patch-epan-dissectors-packet-gluster.h.diff',
-      # Removes SDK checks that prevent the build from working on CLT-only systems
-      # Reported upstream: https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=9290
-      :p1 => DATA
-    }
-  end unless build.head?
+  depends_on "gtk+" => :optional
+  depends_on :x11 if build.with? "gtk+"
 
   def install
     system "./autogen.sh" if build.head?
@@ -57,14 +54,26 @@ class Wireshark < Formula
             "--with-ssl"]
 
     args << "--disable-warnings-as-errors" if build.head?
-    args << "--disable-wireshark" unless build.with? "x" or build.with? "qt"
-    args << "--disable-gtktest" unless build.with? "x"
+    args << "--disable-wireshark" if build.without?("gtk+") && build.without?("qt")
+    args << "--disable-gtktest" if build.without? "gtk+"
     args << "--with-qt" if build.with? "qt"
 
     system "./configure", *args
     system "make"
     ENV.deparallelize # parallel install fails
     system "make install"
+
+    if build.with? 'headers'
+      (include/"wireshark").install Dir["*.h"]
+      (include/"wireshark/epan").install Dir["epan/*.h"]
+      (include/"wireshark/epan/crypt").install Dir["epan/crypt/*.h"]
+      (include/"wireshark/epan/dfilter").install Dir["epan/dfilter/*.h"]
+      (include/"wireshark/epan/dissectors").install Dir["epan/dissectors/*.h"]
+      (include/"wireshark/epan/ftypes").install Dir["epan/ftypes/*.h"]
+      (include/"wireshark/epan/wmem").install Dir["epan/wmem/*.h"]
+      (include/"wireshark/wiretap").install Dir["wiretap/*.h"]
+      (include/"wireshark/wsutil").install Dir["wsutil/*.h"]
+    end
   end
 
   def caveats; <<-EOS.undent
@@ -83,6 +92,12 @@ class Wireshark < Formula
     See bug report:
       https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=3760
     EOS
+  end
+
+  test do
+    system "#{bin}/randpkt", "-b", "100", "-c", "2", "capture.pcap"
+    output = `#{bin}/capinfos -Tmc capture.pcap`
+    assert_equal "File name,Number of packets\ncapture.pcap,2\n", output
   end
 end
 
@@ -105,7 +120,7 @@ index cd41b63..c473fe7 100755
  $as_echo "yes" >&6; }
  		;;
  	esac
- 
+
  	#
 -	# Add a -mmacosx-version-min flag to force tests that
 -	# use the compiler, as well as the build itself, not to,

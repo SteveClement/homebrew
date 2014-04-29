@@ -2,19 +2,22 @@ require 'formula'
 
 class Strongswan < Formula
   homepage 'http://www.strongswan.org'
-  url 'http://download.strongswan.org/strongswan-5.1.0.tar.bz2'
-  sha1 'ee7a9b078b183c138156fba695ddf870f1990748'
+  url 'http://download.strongswan.org/strongswan-5.1.3.tar.bz2'
+  sha1 '6f8898308999b8fc293812ea5812a12c9ddbedc7'
+
+  bottle do
+    sha1 "7a63c925dde5195c98e3e63dc3fb6eb963eac106" => :mavericks
+    sha1 "f4e35b174358d712e8fab4bee12a7a864860b05c" => :mountain_lion
+    sha1 "a6006954a5d396d2822212bec774f7a4b863e19f" => :lion
+  end
 
   option 'with-curl', 'Build with libcurl based fetcher'
   option 'with-suite-b', 'Build with Suite B support (does not use the IPsec implementation provided by the kernel)'
 
-  depends_on 'vstr'
-  depends_on 'openssl' if build.include? 'with-suite-b' or MacOS.version <= :leopard
+  depends_on 'openssl' if build.with? "suite-b" or MacOS.version <= :leopard
   depends_on 'curl' => :optional
 
   def install
-    # required for Vstr
-    ENV.append 'CFLAGS', '--std=gnu89' if ENV.compiler == :clang
     args = %W[
       --disable-dependency-tracking
       --prefix=#{prefix}
@@ -46,12 +49,17 @@ class Strongswan < Formula
       --enable-tools
       --enable-updown
       --enable-unity
-      --enable-vstr
       --enable-xauth-generic
     ]
     args << "--enable-curl" if build.with? 'curl'
-    args << "--enable-kernel-pfkey" unless build.with? 'suite-b'
+    args << "--enable-kernel-pfkey" if build.without? 'suite-b'
     args << "--enable-kernel-libipsec" if build.with? 'suite-b'
+
+    # problem with weak reference, will be fixed in the next release
+    inreplace "src/libstrongswan/utils/test.c" do |s|
+      s.gsub! /__attribute__.+$/, "{}"
+      s.gsub! /!testable_functions_create/, "TRUE"
+    end
 
     system "./configure", *args
     system "make", "install"

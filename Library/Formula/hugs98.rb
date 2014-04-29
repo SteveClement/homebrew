@@ -9,15 +9,17 @@ class Hugs98 < Formula
   depends_on 'readline'
 
   fails_with :clang do
-    build 425
-    cause %[ERROR "libraries/bootlib/Data/Dynamic.hs" - Module "Main" already loaded]
+    cause %[ERROR "../libraries/bootlib/Data/Dynamic.hs" - Module "Main" already loaded]
   end
 
-  def patches
-    {:p0 => [
-      "https://trac.macports.org/export/80246/trunk/dports/lang/hugs98/files/patch-packages-base-include-HsBase.h.diff",
-      "https://trac.macports.org/export/80246/trunk/dports/lang/hugs98/files/patch-libraries-tools-make-bootlib.diff"
-    ]}
+  patch :p0 do
+    url "https://trac.macports.org/export/80246/trunk/dports/lang/hugs98/files/patch-packages-base-include-HsBase.h.diff"
+    sha1 "2cc58901ec6e8d81bda8d73230cb0a27b320cf94"
+  end
+
+  patch :p0 do
+    url "https://trac.macports.org/export/80246/trunk/dports/lang/hugs98/files/patch-libraries-tools-make-bootlib.diff"
+    sha1 "acd32ba7fda404f9c33791c253e14e801ffd4e2f"
   end
 
   def install

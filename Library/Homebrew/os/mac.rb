@@ -23,7 +23,7 @@ module OS
       # Don't call tools (cc, make, strip, etc.) directly!
       # Give the name of the binary you look for as a string to this method
       # in order to get the full path back as a Pathname.
-      (@locate ||= {}).fetch(tool.to_s) do |key|
+      (@locate ||= {}).fetch(tool) do |key|
         @locate[key] = if File.executable?(path = "/usr/bin/#{tool}")
           Pathname.new path
         # Homebrew GCCs most frequently; much faster to check this before xcrun
@@ -36,7 +36,7 @@ module OS
           # If it's not there, or xcode-select is misconfigured, we have to
           # look in dev_tools_path, and finally in xctoolchain_path, because the
           # tools were split over two locations beginning with Xcode 4.3+.
-          xcrun_path = unless Xcode.bad_xcode_select_path?
+          xcrun_path = begin
             path = `/usr/bin/xcrun -find #{tool} 2>/dev/null`.chomp
             # If xcrun finds a superenv tool then discard the result.
             path unless path.include?("Library/ENV")
@@ -50,18 +50,18 @@ module OS
       end
     end
 
+    def dev_tools_prefix
+      dev_tools_path.parent.parent
+    end
+
     def dev_tools_path
       @dev_tools_path ||= if tools_in_prefix? CLT::MAVERICKS_PKG_PATH
         Pathname.new "#{CLT::MAVERICKS_PKG_PATH}/usr/bin"
       elsif tools_in_prefix? "/"
-        # probably a safe enough assumption (the unix way)
         Pathname.new "/usr/bin"
-      elsif not Xcode.bad_xcode_select_path? and not `/usr/bin/xcrun -find make 2>/dev/null`.empty?
-        # Note that the exit status of system "xcrun foo" isn't always accurate
-        # Wherever "make" is there are the dev tools.
-        Pathname.new(`/usr/bin/xcrun -find make`.chomp).dirname
-      elsif File.exist? "#{Xcode.prefix}/usr/bin/make"
-        # cc stopped existing with Xcode 4.3, there are c89 and c99 options though
+      elsif not (make_path = `/usr/bin/xcrun -find make 2>/dev/null`).empty?
+        Pathname.new(make_path.chomp).dirname
+      elsif Xcode.prefix && File.exist?("#{Xcode.prefix}/usr/bin/make")
         Pathname.new "#{Xcode.prefix}/usr/bin"
       end
     end
@@ -84,7 +84,7 @@ module OS
       (@sdk_path ||= {}).fetch(v.to_s) do |key|
         opts = []
         # First query Xcode itself
-        opts << `#{locate('xcodebuild')} -version -sdk macosx#{v} Path 2>/dev/null`.chomp unless Xcode.bad_xcode_select_path?
+        opts << `#{locate('xcodebuild')} -version -sdk macosx#{v} Path 2>/dev/null`.chomp
         # Xcode.prefix is pretty smart, so lets look inside to find the sdk
         opts << "#{Xcode.prefix}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX#{v}.sdk"
         # Xcode < 4.3 style
@@ -95,11 +95,12 @@ module OS
 
     def default_cc
       cc = locate 'cc'
-      Pathname.new(cc).realpath.basename.to_s rescue nil
+      cc.realpath.basename.to_s rescue nil
     end
 
     def default_compiler
       case default_cc
+        when /^gcc-4.0/ then :gcc_4_0
         when /^gcc/ then :gcc
         when /^llvm/ then :llvm
         when "clang" then :clang
@@ -130,8 +131,9 @@ module OS
     def gcc_42_build_version
       @gcc_42_build_version ||=
         begin
-          gcc = MacOS.locate('gcc-4.2') || Formula.factory('apple-gcc42').opt_prefix/'bin/gcc-4.2'
-          raise unless gcc.exist?
+          gcc = MacOS.locate('gcc-4.2')
+          gcc ||= Formula.factory('apple-gcc42').opt_prefix/'bin/gcc-4.2' rescue nil
+          raise if gcc.nil? || !gcc.exist?
         rescue
           gcc = nil
         end
@@ -166,19 +168,22 @@ module OS
     end
 
     def non_apple_gcc_version(cc)
-      return unless path = locate(cc)
+      path = Formula.factory("gcc").opt_prefix/"bin/#{cc}"
+      path = nil unless path.exist?
+
+      return unless path ||= locate(cc)
 
       ivar = "@#{cc.gsub(/(-|\.)/, '')}_version"
       return instance_variable_get(ivar) if instance_variable_defined?(ivar)
 
-      `#{path} --version` =~ /gcc-\d.\d \(GCC\) (\d\.\d\.\d)/
-      instance_variable_set(ivar, $1)
+      `#{path} --version` =~ /gcc(-\d\.\d \(GCC\))? (\d\.\d\.\d)/
+      instance_variable_set(ivar, $2)
     end
 
     # See these issues for some history:
-    # http://github.com/mxcl/homebrew/issues/#issue/13
-    # http://github.com/mxcl/homebrew/issues/#issue/41
-    # http://github.com/mxcl/homebrew/issues/#issue/48
+    # http://github.com/Homebrew/homebrew/issues/13
+    # http://github.com/Homebrew/homebrew/issues/41
+    # http://github.com/Homebrew/homebrew/issues/48
     def macports_or_fink
       paths = []
 
@@ -213,7 +218,7 @@ module OS
     end
 
     def preferred_arch
-      @preferred_arch ||= if prefer_64_bit?
+      if prefer_64_bit?
         Hardware::CPU.arch_64_bit
       else
         Hardware::CPU.arch_32_bit
@@ -243,6 +248,9 @@ module OS
       "4.6.3" => { :llvm_build => 2336, :clang => "4.2", :clang_build => 425 },
       "5.0"   => { :clang => "5.0", :clang_build => 500 },
       "5.0.1" => { :clang => "5.0", :clang_build => 500 },
+      "5.0.2" => { :clang => "5.0", :clang_build => 500 },
+      "5.1"   => { :clang => "5.1", :clang_build => 503 },
+      "5.1.1" => { :clang => "5.1", :clang_build => 503 },
     }
 
     def compilers_standard?
@@ -254,28 +262,34 @@ module OS
         Homebrew doesn't know what compiler versions ship with your version
         of Xcode (#{Xcode.version}). Please `brew update` and if that doesn't help, file
         an issue with the output of `brew --config`:
-          https://github.com/mxcl/homebrew/issues
+          https://github.com/Homebrew/homebrew/issues
+
+        Note that we only track stable, released versions of Xcode.
 
         Thanks!
       EOS
     end
 
-    def app_with_bundle_id id
-      path = mdfind(id).first
+    def app_with_bundle_id(*ids)
+      path = mdfind(*ids).first
       Pathname.new(path) unless path.nil? or path.empty?
     end
 
-    def mdfind id
+    def mdfind(*ids)
       return [] unless OS.mac?
-      (@mdfind ||= {}).fetch(id.to_s) do |key|
-        @mdfind[key] = `/usr/bin/mdfind "kMDItemCFBundleIdentifier == '#{key}'"`.split("\n")
+      (@mdfind ||= {}).fetch(ids) do
+        @mdfind[ids] = `/usr/bin/mdfind "#{mdfind_query(*ids)}"`.split("\n")
       end
     end
 
-    def pkgutil_info id
-      (@pkginfo ||= {}).fetch(id.to_s) do |key|
+    def pkgutil_info(id)
+      (@pkginfo ||= {}).fetch(id) do |key|
         @pkginfo[key] = `/usr/sbin/pkgutil --pkg-info "#{key}" 2>/dev/null`.strip
       end
+    end
+
+    def mdfind_query(*ids)
+      ids.map! { |id| "kMDItemCFBundleIdentifier == #{id}" }.join(" || ")
     end
   end
 end

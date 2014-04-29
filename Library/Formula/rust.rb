@@ -2,10 +2,16 @@ require 'formula'
 
 class Rust < Formula
   homepage 'http://www.rust-lang.org/'
-  url 'http://static.rust-lang.org/dist/rust-0.8.tar.gz'
-  sha256 '42f791ab1537357fe0f63d67ffe6bcb64ecf16b2bd3f1484ab589823f5914182'
+  url 'http://static.rust-lang.org/dist/rust-0.10.tar.gz'
+  sha1 '20460730047ca6694eeb780d990f566572c32c43'
 
   head 'https://github.com/mozilla/rust.git'
+
+  bottle do
+    sha1 "b5b11a57f873c8fd3a794ede207839dcb0bfbe4b" => :mavericks
+    sha1 "ca4d44441ef88c71cd98852c36d15d89e95d9fb7" => :mountain_lion
+    sha1 "507705ef8749dd3cfae781f016e18bfcc09d8947" => :lion
+  end
 
   fails_with :clang do
     build 318
@@ -14,15 +20,15 @@ class Rust < Formula
 
   def install
     args = ["--prefix=#{prefix}"]
+    args << "--disable-rpath" if build.head?
     args << "--enable-clang" if ENV.compiler == :clang
     system "./configure", *args
     system "make"
     system "make install"
   end
 
-  def test
+  test do
     system "#{bin}/rustc"
-    system "#{bin}/rustdoc -h"
-    system "#{bin}/rustpkg -v"
+    system "#{bin}/rustdoc", "-h"
   end
 end

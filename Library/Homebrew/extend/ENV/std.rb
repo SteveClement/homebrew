@@ -73,9 +73,8 @@ module Stdenv
 
     if cc =~ GNU_GCC_REGEXP
       warn_about_non_apple_gcc($1)
-      gcc_name = 'gcc' + $1.delete('.')
-      gcc = Formulary.factory(gcc_name)
-      self.append_path('PATH', gcc.opt_prefix/'bin')
+      gcc_formula = gcc_version_formula($1)
+      self.append_path('PATH', gcc_formula.opt_prefix/'bin')
     end
 
     # Add lib and include etc. from the current macosxsdk to compiler flags:
@@ -103,71 +102,27 @@ module Stdenv
   end
   alias_method :j1, :deparallelize
 
-  # recommended by Apple, but, eg. wget won't compile with this flag, so…
-  def fast
-    remove_from_cflags(/-O./)
-    append_to_cflags '-fast'
-  end
-  def O4
-    # LLVM link-time optimization
-    remove_from_cflags(/-O./)
-    append_to_cflags '-O4'
-  end
-  def O3
-    # Sometimes O4 just takes fucking forever
-    remove_from_cflags(/-O./)
-    append_to_cflags '-O3'
-  end
-  def O2
-    # Sometimes O3 doesn't work or produces bad binaries
-    remove_from_cflags(/-O./)
-    append_to_cflags '-O2'
-  end
-  def Os
-    # Sometimes you just want a small one
-    remove_from_cflags(/-O./)
-    append_to_cflags '-Os'
-  end
-  def Og
-    # Sometimes you want a debug build
-    remove_from_cflags(/-O./)
-    append_to_cflags '-g -O0'
-  end
-  def O1
-    # Sometimes even O2 doesn't work :(
-    remove_from_cflags(/-O./)
-    append_to_cflags '-O1'
+  # These methods are no-ops for compatibility.
+  %w{fast O4 Og}.each { |opt| define_method(opt) {} }
+
+  %w{O3 O2 O1 O0 Os}.each do |opt|
+    define_method opt do
+      remove_from_cflags(/-O./)
+      append_to_cflags "-#{opt}"
+    end
   end
 
   def gcc_4_0_1
-    # we don't use locate because gcc 4.0 has not been provided since Xcode 4
-    self.cc  = "#{MacOS.dev_tools_path}/gcc-4.0"
-    self.cxx = "#{MacOS.dev_tools_path}/g++-4.0"
-    replace_in_cflags '-O4', '-O3'
+    self.cc  = MacOS.locate("gcc-4.0")
+    self.cxx = MacOS.locate("g++-4.0")
     set_cpu_cflags '-march=nocona -mssse3'
-    @compiler = :gcc
+    @compiler = :gcc_4_0
   end
   alias_method :gcc_4_0, :gcc_4_0_1
 
   def gcc
-    # Apple stopped shipping gcc-4.2 with Xcode 4.2
-    # However they still provide a gcc symlink to llvm
-    # But we don't want LLVM of course.
-
     self.cc  = MacOS.locate("gcc-4.2")
     self.cxx = MacOS.locate("g++-4.2")
-
-    unless cc
-      self.cc  = "#{HOMEBREW_PREFIX}/bin/gcc-4.2"
-      self.cxx = "#{HOMEBREW_PREFIX}/bin/g++-4.2"
-      raise "GCC could not be found" unless File.exist? cc
-    end
-
-    unless cc =~ %r{^/usr/bin/xcrun }
-      raise "GCC could not be found" if Pathname.new(cc).realpath.to_s =~ /llvm/
-    end
-
-    replace_in_cflags '-O4', '-O3'
     set_cpu_cflags
     @compiler = :gcc
   end
@@ -176,8 +131,8 @@ module Stdenv
   GNU_GCC_VERSIONS.each do |n|
     define_method(:"gcc-4.#{n}") do
       gcc = "gcc-4.#{n}"
-      self.cc = self['OBJC'] = gcc
-      self.cxx = self['OBJCXX'] = gcc.gsub('c', '+')
+      self.cc = gcc
+      self.cxx = gcc.gsub('c', '+')
       set_cpu_cflags
       @compiler = gcc
     end
@@ -299,7 +254,6 @@ module Stdenv
   # we've seen some packages fail to build when warnings are disabled!
   def enable_warnings
     remove_from_cflags '-w'
-    remove_from_cflags '-Qunused-arguments'
   end
 
   def m64
@@ -313,7 +267,6 @@ module Stdenv
 
   def universal_binary
     append_to_cflags Hardware::CPU.universal_archs.as_arch_flags
-    replace_in_cflags '-O4', '-O3' # O4 seems to cause the build to fail
     append 'LDFLAGS', Hardware::CPU.universal_archs.as_arch_flags
 
     if compiler != :clang && Hardware.is_32_bit?
@@ -369,14 +322,15 @@ module Stdenv
 
     if ARGV.build_bottle?
       arch = ARGV.bottle_arch || Hardware.oldest_cpu
-      append flags, Hardware::CPU.optimization_flags[arch]
+      append flags, Hardware::CPU.optimization_flags.fetch(arch)
+    elsif Hardware::CPU.intel? && !Hardware::CPU.sse4?
+      # If the CPU doesn't support SSE4, we cannot trust -march=native or
+      # -march=<cpu family> to do the right thing because we might be running
+      # in a VM or on a Hackintosh.
+      append flags, Hardware::CPU.optimization_flags.fetch(Hardware.oldest_cpu)
     else
-      # Don't set -msse3 and older flags because -march does that for us
       append flags, map.fetch(Hardware::CPU.family, default)
     end
-
-    # not really a 'CPU' cflag, but is only used with clang
-    remove flags, '-Qunused-arguments'
   end
 
   def set_cpu_cflags default=DEFAULT_FLAGS, map=Hardware::CPU.optimization_flags
@@ -391,4 +345,7 @@ module Stdenv
       Hardware::CPU.cores
     end
   end
+
+  # This method does nothing in stdenv since there's no arg refurbishment
+  def refurbish_args; end
 end
