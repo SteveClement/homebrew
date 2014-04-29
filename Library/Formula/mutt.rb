@@ -1,6 +1,6 @@
 require 'formula'
 
-class Mutt < Formula
+class MuttPatched < Formula
   homepage 'http://www.mutt.org/'
   url 'ftp://ftp.mutt.org/mutt/mutt-1.5.23.tar.gz'
   mirror 'http://fossies.org/linux/misc/mutt-1.5.23.tar.gz'
@@ -33,11 +33,13 @@ class Mutt < Formula
     :because => 'both install mmdf.5 and mbox.5 man pages'
 
   option "with-debug", "Build with debug option enabled"
+  option "with-sidebar-patch", "Build with sidebar patch"
   option "with-trash-patch", "Apply trash folder patch"
   option "with-s-lang", "Build against slang instead of ncurses"
   option "with-ignore-thread-patch", "Apply ignore-thread patch"
   option "with-pgp-verbose-mime-patch", "Apply PGP verbose mime patch"
-  option "with-pgp-multiple-crypt-hook-patch", "Apply PGP multiple-crypti-hook patch"
+  option "with-pgp-multiple-crypt-hook-patch", "Apply PGP multiple-crypt-hook patch"
+  option "with-pgp-combined-crypt-hook-patch", "Apply PGP combined-crypt-hook patch"
   option "with-confirm-attachment-patch", "Apply confirm attachment patch"
 
   depends_on 'openssl'
@@ -45,40 +47,10 @@ class Mutt < Formula
   depends_on 's-lang' => :optional
   depends_on 'gpgme' => :optional
 
-<<<<<<< HEAD
-  def patches
-    urls = [
-<<<<<<< HEAD
-      ['with-sidebar-patch', 'https://raw.github.com/nedos/mutt-sidebar-patch/master/mutt-sidebar.patch'],
-=======
->>>>>>> upstream/master
-      ['with-trash-patch', 'http://patch-tracker.debian.org/patch/series/dl/mutt/1.5.21-6.4/features/trash-folder'],
-      # original source for this went missing, patch sourced from Arch at
-      # https://aur.archlinux.org/packages/mutt-ignore-thread/
-      ['with-ignore-thread-patch', 'https://gist.github.com/mistydemeo/5522742/raw/1439cc157ab673dc8061784829eea267cd736624/ignore-thread-1.5.21.patch'],
-      ['with-pgp-verbose-mime-patch',
-<<<<<<< HEAD
-          'http://patch-tracker.debian.org/patch/series/dl/mutt/1.5.21-6.2/features-old/patch-1.5.4.vk.pgp_verbose_mime'],
-      ['with-pgp-multiple-crypt-hook-patch',
-          'http://localhost.lu/mutt/patches/patch-1.5.22.sc.multiple-crypt-hook.1'],
-      ['with-pgp-combined-crypt-hook-patch',
-          'http://localhost.lu/mutt/patches/patch-1.5.22.sc.crypt-combined.1'],
-=======
-          'http://patch-tracker.debian.org/patch/series/dl/mutt/1.5.21-6.4/features-old/patch-1.5.4.vk.pgp_verbose_mime'],
->>>>>>> upstream/master
-      ['with-confirm-attachment-patch', 'https://gist.github.com/tlvince/5741641/raw/c926ca307dc97727c2bd88a84dcb0d7ac3bb4bf5/mutt-attach.patch'],
-    ]
-
-    p = []
-    urls.each do |u|
-      p << u[1] if build.include? u[0]
-    end
-=======
   patch do
-    url "http://patch-tracker.debian.org/patch/series/dl/mutt/1.5.21-6.2+deb7u1/features/trash-folder"
+    url "http://localhost.lu/mutt/patches/trash-folder"
     sha1 "6c8ce66021d89a063e67975a3730215c20cf2859"
   end if build.with? "trash-patch"
->>>>>>> upstream/master
 
   # original source for this went missing, patch sourced from Arch at
   # https://aur.archlinux.org/packages/mutt-ignore-thread/
@@ -93,9 +65,24 @@ class Mutt < Formula
   end if build.with? "pgp-verbose-mime-patch"
 
   patch do
+    url "http://localhost.lu/mutt/patches/patch-1.5.23.sc.multiple-crypt-hook.1"
+    sha1 "697aae4e643f1e8f50c27b894ee6bfaab38d3119"
+  end if build.with? "pgp-multiple-crypt-hook-patch"
+
+  patch do
+    url "http://localhost.lu/mutt/patches/patch-1.5.23.sc.crypt-combined.1"
+    sha1 "2a12fe0a071e8cf7fe6f29336c6dadbccf95cdea"
+  end if build.with? "pgp-combined-crypt-hook-patch"
+
+  patch do
     url "https://gist.githubusercontent.com/tlvince/5741641/raw/c926ca307dc97727c2bd88a84dcb0d7ac3bb4bf5/mutt-attach.patch"
     sha1 "94da52d50508d8951aa78ca4b073023414866be1"
   end if build.with? "confirm-attachment-patch"
+
+  patch do
+    url "https://raw.github.com/nedos/mutt-sidebar-patch/master/mutt-sidebar.patch"
+    sha1 "1e151d4ff3ce83d635cf794acf0c781e1b748ff1"
+  end if build.with? "sidebar-patch"
 
   def install
     args = ["--disable-dependency-tracking",
