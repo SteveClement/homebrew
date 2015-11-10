@@ -1,27 +1,26 @@
-require 'formula'
-
 class CssCrush < Formula
-  homepage 'http://the-echoplex.net/csscrush'
-  url 'https://github.com/peteboere/css-crush/archive/v2.1.0.tar.gz'
-  sha1 '3285917dce69420e2822c59e5c25401aaaa5ea64'
+  desc "Extensible PHP based CSS preprocessor"
+  homepage "http://the-echoplex.net/csscrush"
+  url "https://github.com/peteboere/css-crush/archive/v2.4.0.tar.gz"
+  sha256 "75c8d868adf5a537a47fedff28c53fe4e6764264239573a858a0048036280d6c"
+  head "https://github.com/peteboere/css-crush.git"
+
+  bottle :unneeded
 
   def install
-    libexec.install Dir['*']
-    (bin+'csscrush').write <<-EOS.undent
+    libexec.install Dir["*"]
+    (bin+"csscrush").write <<-EOS.undent
       #!/bin/sh
       php "#{libexec}/cli.php" "$@"
     EOS
   end
 
   test do
-    path = testpath/"test.crush"
-    path.write <<-EOS.undent
+    (testpath/"test.crush").write <<-EOS.undent
       @define foo #123456;
       p { color: $(foo); }
     EOS
 
-    output = `#{bin}/csscrush #{path}`.strip
-    assert_equal "p{color:#123456}", output
-    assert_equal 0, $?.exitstatus
+    assert_equal "p{color:#123456}", shell_output("#{bin}/csscrush #{testpath}/test.crush").strip
   end
 end

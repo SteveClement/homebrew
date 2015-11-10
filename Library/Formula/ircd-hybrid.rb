@@ -1,15 +1,21 @@
-require 'formula'
-
 class IrcdHybrid < Formula
-  homepage 'http://www.ircd-hybrid.org/'
-  url 'https://downloads.sourceforge.net/project/ircd-hybrid/ircd-hybrid/ircd-hybrid-8.1.15/ircd-hybrid-8.1.15.tgz'
-  sha1 '4870009a26eeb1ca844402e5a15783d3cbfc917e'
+  desc "High-performance secure IRC server"
+  homepage "http://www.ircd-hybrid.org/"
+  url "https://downloads.sourceforge.net/project/ircd-hybrid/ircd-hybrid/ircd-hybrid-8.2.9/ircd-hybrid-8.2.9.tgz"
+  sha256 "10594036c8f1502d61f68f8feb9216aaed8d611df36145e34746d93039a830a7"
+
+  bottle do
+    sha256 "01479a3ad06cb6dc0bad08bbd516ba9e870ab3d3745374c656adefa43705b236" => :el_capitan
+    sha256 "5e370515a3c039cde596171d07ae4a854410288591e128b55579b97ef0d8ad5d" => :yosemite
+    sha256 "8def15837e5e34f1dcbc4899289f887db1ede97358d1bb97310ab4ab3b2037cc" => :mavericks
+  end
 
   # ircd-hybrid needs the .la files
   skip_clean :la
 
-  # system openssl fails with undefined symbols: "_SSL_CTX_clear_options"
-  depends_on 'openssl' if MacOS.version < :lion
+  depends_on "openssl"
+
+  conflicts_with "ircd-irc2", :because => "both install an `ircd` binary"
 
   def install
     ENV.j1 # build system trips over itself
@@ -18,9 +24,8 @@ class IrcdHybrid < Formula
                           "--prefix=#{prefix}",
                           "--localstatedir=#{var}",
                           "--sysconfdir=#{etc}",
-                          # there's no config setting for this so set it to something generous
-                          "--with-nicklen=30"
-    system "make install"
+                          "--enable-openssl=#{Formula["openssl"].opt_prefix}"
+    system "make", "install"
     etc.install "doc/reference.conf" => "ircd.conf"
   end
 

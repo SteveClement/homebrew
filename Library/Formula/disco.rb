@@ -1,21 +1,29 @@
-require 'formula'
-
 class Disco < Formula
-  homepage 'http://discoproject.org/'
-  url 'https://github.com/discoproject/disco/archive/0.5.tar.gz'
-  sha1 '2728d2cc9ea398ddf1e4420e5c75750aa74fe0e2'
-  # Periods in the install path cause disco-worker to complain so change to underscores.
-  version '0_5_0'
+  desc "Distributed computing framework based on the MapReduce paradigm"
+  homepage "http://discoproject.org/"
+  url "https://github.com/discoproject/disco/archive/0.5.4.tar.gz"
+  sha256 "a1872b91fd549cea6e709041deb0c174e18d0e1ea36a61395be37e50d9df1f8f"
 
-  depends_on :python
-  depends_on 'erlang'
-  depends_on 'simplejson' => :python if MacOS.version <= :leopard
-  depends_on 'libcmph'
+  bottle do
+    cellar :any
+    sha1 "f1a4e9775053971dac6ab3b183ebb13d6928c050" => :yosemite
+    sha1 "286325ec178e1bd06a78127333c835a1bf5a2763" => :mavericks
+    sha1 "da6e23c51a8ca6c353e83724746f0e11dba37a99" => :mountain_lion
+  end
+
+  depends_on :python if MacOS.version <= :snow_leopard
+  depends_on "erlang"
+  depends_on "simplejson" => :python if MacOS.version <= :leopard
+  depends_on "libcmph"
 
   # Modifies config for single-node operation
   patch :DATA
 
+  conflicts_with "mono", :because => "both install `disco` binaries"
+
   def install
+    ENV["PYTHONPATH"] = lib+"python2.7/site-packages"
+
     inreplace "Makefile" do |s|
       s.change_make_var! "prefix", prefix
       s.change_make_var! "sysconfdir", etc
@@ -27,7 +35,7 @@ class Disco < Formula
     system "git init && git add master/rebar && git commit -a -m 'dummy commit'"
 
     system "make"
-    system "make install"
+    system "make", "install"
     prefix.install %w[contrib doc examples]
 
     # Fix the config file to point at the linked files, not in to cellar
@@ -36,6 +44,12 @@ class Disco < Formula
     inreplace "#{etc}/disco/settings.py" do |s|
       s.gsub!("Cellar/disco/"+version+"/", "")
     end
+
+    bin.env_script_all_files(libexec+"bin", :PYTHONPATH => ENV["PYTHONPATH"])
+  end
+
+  test do
+    system "#{bin}/disco"
   end
 
   def caveats

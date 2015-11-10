@@ -1,36 +1,35 @@
-require 'formula'
-
 class Libdc1394 < Formula
-  homepage 'http://damien.douxchamps.net/ieee1394/libdc1394/'
-  url 'https://downloads.sourceforge.net/project/libdc1394/libdc1394-2/2.2.1/libdc1394-2.2.1.tar.gz'
-  sha1 'b92c9670b68c4e5011148f16c87532bef2e5b808'
+  desc "Provides API for IEEE 1394 cameras"
+  homepage "http://damien.douxchamps.net/ieee1394/libdc1394/"
+  url "https://downloads.sourceforge.net/project/libdc1394/libdc1394-2/2.2.2/libdc1394-2.2.2.tar.gz"
+  sha256 "ff8744a92ab67a276cfaf23fa504047c20a1ff63262aef69b4f5dbaa56a45059"
 
-  depends_on :libtool
-  depends_on :automake
-  depends_on :autoconf
-  depends_on 'sdl'
+  bottle do
+    cellar :any
+    revision 1
+    sha1 "289ebcfa4d7aea0740a54c5de50df23018f9d742" => :yosemite
+    sha1 "747ac444ec23e13c57ae476d2e1181a2d6c728f0" => :mavericks
+    sha1 "68488e8fc4d387b6dc63e95dba4c26a7509ca59d" => :mountain_lion
+  end
+
+  option :universal
+
+  depends_on "sdl"
 
   # fix issue due to bug in OSX Firewire stack
   # libdc1394 author comments here:
   # http://permalink.gmane.org/gmane.comp.multimedia.libdc1394.devel/517
   patch :DATA
 
-  # Backport of upstream fixes for building on OS X
-  patch do
-    url "https://gist.githubusercontent.com/jacknagel/7395159/raw/3ba722636fb898d210170f5d8a494977c89626b7/libdc1394.patch"
-    sha1 "832869d05dabf8d62c1a5ac1b10a94fb7b7755c5"
-  end
-
   def install
-    system "autoreconf", "-fvi"
+    ENV.universal_binary if build.universal?
     system "./configure", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
                           "--disable-examples",
                           "--disable-sdltest"
-    system "make install"
+    system "make", "install"
   end
 end
-
 
 __END__
 diff --git a/dc1394/macosx/capture.c b/dc1394/macosx/capture.c

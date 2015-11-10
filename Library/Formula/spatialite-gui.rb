@@ -1,40 +1,34 @@
-require 'formula'
-
 class SpatialiteGui < Formula
-  homepage 'https://www.gaia-gis.it/fossil/spatialite_gui/index'
+  desc "GUI tool supporting SpatiaLite"
+  homepage "https://www.gaia-gis.it/fossil/spatialite_gui/index"
+  url "https://www.gaia-gis.it/gaia-sins/spatialite-gui-sources/spatialite_gui-1.7.1.tar.gz"
+  sha256 "cb9cb1ede7f83a5fc5f52c83437e556ab9cb54d6ace3c545d31b317fd36f05e4"
+  revision 1
 
-  stable do
-    url "http://www.gaia-gis.it/gaia-sins/spatialite-gui-sources/spatialite_gui-1.5.0-stable.tar.gz"
-    sha1 "b8cfe3def8c77928f7c9fcc86bae3c99179fa486"
-
-    # Compatibility fix for wxWidgets 2.9.x. Remove on next release.
-    patch :p0 do
-      url "https://www.gaia-gis.it/fossil/spatialite_gui/vpatch?from=d8416d26358a24dc&to=b5b920d8d654dd0e"
-      sha1 "09d2cd521370e00ab21133902db7a44f1eef30e4"
-    end
+  bottle do
+    cellar :any
+    sha256 "d65494655bb8470c01e1ecdce00ea8802ef3b1eaebcf87ad8daf2494cbe6aa20" => :yosemite
+    sha256 "dece5c5d459997cc7a8d789c38336dd4eb05e8f048f3e6eb84f581120d4ac023" => :mavericks
+    sha256 "750a8216d218709d6aafd9c0fecce6342fa5ce51f3870ba844ffdd3e381c91d0" => :mountain_lion
   end
 
-  devel do
-    url 'http://www.gaia-gis.it/gaia-sins/spatialite-gui-sources/spatialite_gui-1.7.1.tar.gz'
-    sha1 '3b9d88e84ffa5a4f913cf74b098532c2cd15398f'
-
-    depends_on 'libxml2'
-  end
-
-  depends_on 'pkg-config' => :build
-  depends_on 'libspatialite'
-  depends_on 'libgaiagraphics'
-  depends_on 'wxmac'
-  depends_on 'geos'
-  depends_on 'proj'
-  depends_on 'freexl'
-  depends_on 'sqlite'
+  depends_on "pkg-config" => :build
+  depends_on "freexl"
+  depends_on "geos"
+  depends_on "libgaiagraphics"
+  depends_on "libspatialite"
+  depends_on "proj"
+  depends_on "sqlite"
+  depends_on "wxmac"
 
   patch :DATA
 
   def install
+    # Add aui library; reported upstream multiple times:
+    # https://groups.google.com/forum/#!searchin/spatialite-users/aui/spatialite-users/wnkjK9pde2E/hVCpcndUP_wJ
+    inreplace "configure", "WX_LIBS=\"$(wx-config --libs)\"", "WX_LIBS=\"$(wx-config --libs std,aui)\""
     system "./configure", "--prefix=#{prefix}"
-    system "make install"
+    system "make", "install"
   end
 end
 

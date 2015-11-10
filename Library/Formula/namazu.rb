@@ -1,9 +1,8 @@
-require "formula"
-
 class Namazu < Formula
+  desc "Full-text search engine"
   homepage "http://www.namazu.org/"
   url "http://www.namazu.org/stable/namazu-2.0.21.tar.gz"
-  sha1 "35aaff34d0cdbe96fff24da87671b6f902bb7d43"
+  sha256 "5c18afb679db07084a05aca8dffcfb5329173d99db8d07ff6d90b57c333c71f7"
 
   bottle do
     sha1 "b0c14a4f80b058708f11adb5219a7070ec668a1b" => :mavericks
@@ -17,7 +16,8 @@ class Namazu < Formula
 
   resource "text-kakasi" do
     url "http://search.cpan.org/CPAN/authors/id/D/DA/DANKOGAI/Text-Kakasi-2.04.tar.gz"
-    sha1 "6a574b6b11eb6ee6b8f52251df355792ffca6add"
+    mirror "http://search.mcpan.org/CPAN/authors/id/D/DA/DANKOGAI/Text-Kakasi-2.04.tar.gz"
+    sha256 "844c01e78ba4bfb89c0702995a86f488de7c29b40a75e7af0e4f39d55624dba0"
   end
 
   def install
@@ -43,12 +43,11 @@ class Namazu < Formula
 
   test do
     data_file = testpath/"data.txt"
-    data_file.write <<-EOS.undent
-      This is a Namazu test case for Homebrew.
-    EOS
+    data_file.write "This is a Namazu test case for Homebrew."
     mkpath "idx"
-    system "mknmz", "-O", "idx", data_file
-    search_result = `namazu -a Homebrew idx`
-    assert search_result.include?("data.txt")
+    system bin/"mknmz", "-O", "idx", data_file
+    search_result = `#{bin}/namazu -a Homebrew idx`
+    assert search_result.include?(data_file)
+    assert_equal 0, $?.exitstatus
   end
 end

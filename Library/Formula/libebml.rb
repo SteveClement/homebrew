@@ -1,22 +1,33 @@
-require 'formula'
-
 class Libebml < Formula
-  homepage 'http://www.matroska.org/'
-  url 'http://dl.matroska.org/downloads/libebml/libebml-1.3.0.tar.bz2'
-  mirror 'http://www.bunkus.org/videotools/mkvtoolnix/sources/libebml-1.3.0.tar.bz2'
-  sha256 '83b074d6b62715aa0080406ea84d33df2e44b5d874096640233a4db49b8096de'
+  desc "Sort of a sbinary version of XML"
+  homepage "http://www.matroska.org/"
+  url "http://dl.matroska.org/downloads/libebml/libebml-1.3.3.tar.bz2"
+  mirror "https://www.bunkus.org/videotools/mkvtoolnix/sources/libebml-1.3.3.tar.bz2"
+  sha256 "35fb44daa41961f94a0ac1b8f06801e88cc9bf2ad6f562ced8ab7c1f1a875499"
+
+  head do
+    url "https://github.com/Matroska-Org/libebml.git"
+    depends_on "automake" => :build
+    depends_on "autoconf" => :build
+    depends_on "libtool" => :build
+  end
 
   bottle do
     cellar :any
-    sha1 "5daf881f6849582832ee62064279dc3894ddb082" => :mavericks
-    sha1 "0dbfecd7030ee7c9c283927509cc3b3351681e63" => :mountain_lion
-    sha1 "02b8cacc1a5c9bcd8b07b2818a772db07b224dc3" => :lion
+    sha256 "67c3beaaf7861310131d3951ec5c65426caa683f535f2f58dcb42580b624e81e" => :el_capitan
+    sha256 "9ecbc5db4abae34d45784d0a18ab099516b0723429e5c90d75e3d0dcb2fafda2" => :yosemite
+    sha256 "3bd2e124724170da22bfbc67c102c545487d9e6af5c514865078747de1c37dbe" => :mavericks
   end
 
   option :cxx11
 
   def install
     ENV.cxx11 if build.cxx11?
-    system "make", "-C", "make/linux", "install", "prefix=#{prefix}", "CXX=#{ENV.cxx}"
+    system "autoreconf", "-fi" if build.head?
+    system "./configure", "--disable-debug",
+                          "--disable-dependency-tracking",
+                          "--disable-silent-rules",
+                          "--prefix=#{prefix}"
+    system "make", "install"
   end
 end

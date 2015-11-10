@@ -1,14 +1,15 @@
-require 'formula'
-
 class Gitbucket < Formula
-  homepage 'https://github.com/takezoe/gitbucket'
-  url 'https://github.com/takezoe/gitbucket/releases/download/1.12/gitbucket.war'
-  sha1 'aee08693cabd18ab23d0060d52b204cc71ccc626'
+  desc "GitHub clone"
+  homepage "https://github.com/gitbucket/gitbucket"
+  url "https://github.com/gitbucket/gitbucket/releases/download/3.8/gitbucket.war"
+  sha256 "abe2e65e9578f1f3098a27a2d8a7b9dc52ab7dbb98583a7ac5fc054e70998e2a"
 
   head do
-    url 'https://github.com/takezoe/gitbucket.git'
-    depends_on 'ant' => :build
+    url "https://github.com/gitbucket/gitbucket.git"
+    depends_on :ant => :build
   end
+
+  bottle :unneeded
 
   def install
     if build.head?
@@ -36,7 +37,6 @@ class Gitbucket < Formula
           <string>#{opt_libexec}/gitbucket.war</string>
           <string>--host=127.0.0.1</string>
           <string>--port=8080</string>
-          <string>--https=true</string>
         </array>
         <key>RunAtLoad</key>
        <true/>
@@ -48,5 +48,13 @@ class Gitbucket < Formula
   def caveats; <<-EOS.undent
     Note: When using launchctl the port will be 8080.
     EOS
+  end
+
+  test do
+    io = IO.popen("java -jar #{libexec}/gitbucket.war")
+    sleep 12
+    Process.kill("SIGINT", io.pid)
+    Process.wait(io.pid)
+    io.read !~ /Exception/
   end
 end

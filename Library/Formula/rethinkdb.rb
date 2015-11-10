@@ -1,29 +1,27 @@
-require 'formula'
-
 class Rethinkdb < Formula
-  homepage 'http://www.rethinkdb.com/'
-  url 'http://download.rethinkdb.com/dist/rethinkdb-1.12.4.tgz'
-  sha1 '2333f46d5164512ac13778075e082f660c0f2681'
+  desc "The open-source database for the realtime web"
+  homepage "https://www.rethinkdb.com/"
+  url "https://download.rethinkdb.com/dist/rethinkdb-2.1.5-2.tgz"
+  sha256 "7953b486aef0fec076c3adf198fb24c969e344f2247647743f9f1b7c6cb46e23"
 
   bottle do
-    sha1 "82a8e16ca2f0485b5c91cd79b912482ecf904628" => :mavericks
-    sha1 "d2897c77e2f2aafe51ddbe64372b245e6fd8ac2a" => :mountain_lion
-    sha1 "d9de30e12059296ba6af087466f0e028fb73567c" => :lion
+    cellar :any
+    sha256 "418f68002207c9d078f05a7f86ba7811c79792f7276904d1aed783028a1fcc76" => :el_capitan
+    sha256 "6c9d67a9ba66981262ef420513c8929d4ec4df753d09fe0739b46f36f01dad9a" => :yosemite
+    sha256 "176be70b3d558046f1dbdef7bb7f5a50535e5e3989888ef7c01c62ab6835eae0" => :mavericks
   end
 
   depends_on :macos => :lion
-  depends_on 'boost' => :build
+  depends_on "boost" => :build
+  depends_on "openssl"
 
   fails_with :gcc do
     build 5666 # GCC 4.2.1
-    cause 'RethinkDB uses C++0x'
+    cause "RethinkDB uses C++0x"
   end
 
   def install
     args = ["--prefix=#{prefix}"]
-
-    # brew's v8 is too recent. rethinkdb uses an older v8 API
-    args += ["--fetch", "v8"]
 
     # rethinkdb requires that protobuf be linked against libc++
     # but brew's protobuf is sometimes linked against libstdc++
@@ -31,7 +29,9 @@ class Rethinkdb < Formula
 
     system "./configure", *args
     system "make"
-    system "make install-osx"
+    system "make", "install-osx"
+
+    (var/"log/rethinkdb").mkpath
   end
 
   def plist; <<-EOS.undent
@@ -60,5 +60,10 @@ class Rethinkdb < Formula
     </dict>
     </plist>
     EOS
+  end
+
+  test do
+    shell_output("#{bin}/rethinkdb create -d test")
+    assert File.read("test/metadata").start_with?("RethinkDB")
   end
 end

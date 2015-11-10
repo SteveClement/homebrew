@@ -1,16 +1,26 @@
-require 'formula'
-
 class Bgpq3 < Formula
-  homepage 'http://snar.spb.ru/prog/bgpq3/'
-  url 'http://snar.spb.ru/prog/bgpq3/bgpq3-0.1.19.tgz'
-  sha1 '41a2afaeffb12e43048ca8771c6cc6e6392e0da5'
+  desc "bgp filtering automation for Cisco and Juniper routers"
+  homepage "http://snar.spb.ru/prog/bgpq3/"
+  url "https://github.com/snar/bgpq3/archive/v0.1.31.tar.gz"
+  sha256 "839da59b153b2c748ca021d742cb9da248681e323f380e614ac546b796fbe71b"
   head "https://github.com/snar/bgpq3.git"
 
-  # Makefile: upstream has been informed of the patch through email,
-  # but no plans yet to incorporate it
-  # https://github.com/snar/bgpq3/pull/2
-  # strlcpy.c patch: upstream accepted but has not yet created a release
-  # https://github.com/snar/bgpq3/commit/89d864
+  bottle do
+    cellar :any
+    sha256 "f0be355cc0ce42364f31d1a0190d4239d0a05ee3545d166ec4630c305af23dd0" => :yosemite
+    sha256 "66251ef2771eef19ea08c52961d142f787a4b0184ad73905a5f80d3191700306" => :mavericks
+    sha256 "e4c36bd2ac02efee5c2f74bbf4c207e552d95069773713e3b25c27493a23ebd3" => :mountain_lion
+  end
+
+  devel do
+    url "https://github.com/snar/bgpq3/archive/0.1.32-rc5.tar.gz"
+    sha256 "80da4ff47cc527f6c2d33eb39e41a11a75e71f85d94ce5e8206d9c6c87107c19"
+    version "0.1.32-rc5"
+  end
+
+  # Makefile: upstream has been informed of the patch through email (multiple
+  # times) but no plans yet to incorporate it https://github.com/snar/bgpq3/pull/2
+  # there was discussion about this patch for 0.1.18 and 0.1.19 as well
   patch :DATA
 
   def install
@@ -41,18 +51,3 @@ index c2d7e96..afec780 100644
 
  depend:
  	makedepend -- $(CFLAGS) -- $(SRCS)
-diff --git a/strlcpy.c b/strlcpy.c
-index 6d4b7b0..f66dc42 100644
---- a/strlcpy.c
-+++ b/strlcpy.c
-@@ -27,6 +27,10 @@
-  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  */
-
-+#if HAVE_CONFIG_H
-+#include "config.h"
-+#endif
-+
- #ifndef HAVE_STRLCPY
-
- #include <sys/types.h>

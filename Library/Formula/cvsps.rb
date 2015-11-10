@@ -1,16 +1,15 @@
-require 'formula'
-
 class Cvsps < Formula
-  homepage 'http://www.catb.org/~esr/cvsps/'
-  url 'http://www.catb.org/~esr/cvsps/cvsps-3.10.tar.gz'
-  sha1 '8e0b2c66abd521eef2851da2fa5175f14215e9bf'
+  desc "Create patchset information from CVS"
+  homepage "http://www.catb.org/~esr/cvsps/"
+  url "http://www.catb.org/~esr/cvsps/cvsps-3.13.tar.gz"
+  sha256 "5f078a6e02c394f663893751f128caf643fe00a30b559e87db6f45190c623799"
 
-  depends_on 'asciidoc'
-  depends_on 'docbook'
+  depends_on "asciidoc"
+  depends_on "docbook"
 
   def install
     # otherwise asciidoc will fail to find docbook
-    ENV['XML_CATALOG_FILES'] = etc/'xml/catalog'
+    ENV["XML_CATALOG_FILES"] = etc/"xml/catalog"
 
     system "make", "all", "cvsps.1"
     system "make", "install", "prefix=#{prefix}"

@@ -1,15 +1,14 @@
-require 'formula'
-
 class Colordiff < Formula
-  homepage 'http://www.colordiff.org/'
-  url 'http://www.colordiff.org/colordiff-1.0.13.tar.gz'
-  sha1 '64e369aed2230f3aa5f1510b231fcac270793c09'
+  desc "Color-highlighted diff(1) output"
+  homepage "http://www.colordiff.org/"
+  url "http://www.colordiff.org/colordiff-1.0.16.tar.gz"
+  sha256 "eaf1cfe17dd0e820d38a0b24b0a402eba68b32e9bf9e7791ca2d1831029f138b"
 
   bottle do
-    cellar :any
-    sha1 "724512050ef11d4b0f99eb46b2fa98a44520e5a6" => :mavericks
-    sha1 "7cf723ad9a524e8b7159c57e7a7d97687c3df067" => :mountain_lion
-    sha1 "37447591b2cea0958f2f695ad9a56012cc4cba9b" => :lion
+    cellar :any_skip_relocation
+    sha256 "164196a68ad856b48ddff2de74f63eea098e90a9c211a4ab441b84861bc49136" => :el_capitan
+    sha256 "c31580d91f2bc3c2988957a391c8d30844b6680808811b6fe35e042d6151c68e" => :yosemite
+    sha256 "386b872c9ce130d237efcf4874c4e06582e56bc243fe89c7cd355e72f6d0f048" => :mavericks
   end
 
   patch :DATA
@@ -23,9 +22,9 @@ class Colordiff < Formula
   end
 
   test do
-    cp HOMEBREW_PREFIX+'bin/brew', 'brew1'
-    cp HOMEBREW_PREFIX+'bin/brew', 'brew2'
-    system "#{bin}/colordiff", 'brew1', 'brew2'
+    cp HOMEBREW_PREFIX+"bin/brew", "brew1"
+    cp HOMEBREW_PREFIX+"bin/brew", "brew2"
+    system "#{bin}/colordiff", "brew1", "brew2"
   end
 end
 
@@ -34,14 +33,6 @@ diff --git a/Makefile b/Makefile
 index 6ccbfc7..e5d64e7 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -8,6 +8,7 @@ DIST_FILES=COPYING INSTALL Makefile README \
- TMPDIR=colordiff-${VERSION}
- TARBALL=${TMPDIR}.tar.gz
- 
-+.PHONY: install
- 
- doc: colordiff.xml cdiff.xml
- 	xmlto -vv man colordiff.xml
 @@ -28,8 +29,8 @@ install:
  	if [ ! -f ${DESTDIR}${INSTALL_DIR}/cdiff ] ; then \
  	  install cdiff.sh ${DESTDIR}${INSTALL_DIR}/cdiff; \
@@ -59,5 +50,5 @@ index 6ccbfc7..e5d64e7 100644
  	cp colordiffrc ${DESTDIR}${ETC_DIR}/colordiffrc
 -	-chown root.root ${DESTDIR}${ETC_DIR}/colordiffrc
  	chmod 644 ${DESTDIR}${ETC_DIR}/colordiffrc
- 
+
  uninstall:

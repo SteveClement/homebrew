@@ -1,11 +1,10 @@
-require 'formula'
-
 class John < Formula
-  homepage 'http://www.openwall.com/john/'
-  url 'http://www.openwall.com/john/g/john-1.7.9.tar.bz2'
-  sha1 '8f77bdd42b7cf94ec176f55ea69c4da9b2b8fe3b'
+  desc "Featureful UNIX password cracker"
+  homepage "http://www.openwall.com/john/"
+  url "http://www.openwall.com/john/j/john-1.8.0.tar.xz"
+  sha256 "952cf68369fb5b27f2d112ce7ca1eb16b975c85cbce8c658abb8bc5a20e1b266"
 
-  conflicts_with 'john-jumbo', :because => 'both install the same binaries'
+  conflicts_with "john-jumbo", :because => "both install the same binaries"
 
   patch :DATA # Taken from MacPorts, tells john where to find runtime files
 
@@ -16,27 +15,22 @@ class John < Formula
 
   def install
     ENV.deparallelize
-    arch = MacOS.prefer_64_bit? ? '64' : 'sse2'
+    arch = MacOS.prefer_64_bit? ? "64" : "sse2"
     target = "macosx-x86-#{arch}"
 
-    cd 'src' do
-      inreplace 'Makefile' do |s|
-        s.change_make_var! "CC", ENV.cc
-      end
-      system "make", "clean", target
-    end
+    system "make", "-C", "src", "clean", "CC=#{ENV.cc}", target
 
     # Remove the README symlink and install the real file
-    rm 'README'
-    prefix.install 'doc/README'
-    doc.install Dir['doc/*']
+    rm "README"
+    prefix.install "doc/README"
+    doc.install Dir["doc/*"]
 
     # Only symlink the binary into bin
-    (share/'john').install Dir['run/*']
-    bin.install_symlink share/'john/john'
+    (share/"john").install Dir["run/*"]
+    bin.install_symlink share/"john/john"
 
     # Source code defaults to 'john.ini', so rename
-    mv share/'john/john.conf', share/'john/john.ini'
+    mv share/"john/john.conf", share/"john/john.ini"
   end
 end
 

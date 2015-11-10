@@ -1,9 +1,9 @@
-require 'formula'
-
 class Unifdef < Formula
-  homepage 'http://dotat.at/prog/unifdef/'
-  url 'http://dotat.at/prog/unifdef/unifdef-2.6.tar.gz'
-  sha1 '1b9bea1c4abc2c8fa3f90d6340200f9bd6ead6d9'
+  desc "Selectively process conditional C preprocessor directives"
+  homepage "http://dotat.at/prog/unifdef/"
+  head "https://github.com/fanf2/unifdef.git"
+  url "http://dotat.at/prog/unifdef/unifdef-2.10.tar.gz"
+  sha256 "1375528c8983de06bbf074b6cfa60fcf0257ea8efcbaec0953b744d2e3dcc5dd"
 
   keg_only :provided_by_osx,
     "The unifdef provided by Xcode cannot compile gevent."

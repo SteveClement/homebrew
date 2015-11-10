@@ -1,59 +1,31 @@
-require 'formula'
-
 class Valgrind < Formula
-  homepage 'http://www.valgrind.org/'
+  desc "Dynamic analysis tools (memory, debug, profiling)"
+  homepage "http://www.valgrind.org/"
 
   stable do
-    url 'http://valgrind.org/downloads/valgrind-3.9.0.tar.bz2'
-    sha1 '9415e28933de9d6687f993c4bb797e6bd49583f1'
+    url "http://valgrind.org/downloads/valgrind-3.11.0.tar.bz2"
+    sha256 "6c396271a8c1ddd5a6fb9abe714ea1e8a86fce85b30ab26b4266aeb4c2413b42"
+  end
 
-    if MacOS.version == :mavericks
-      depends_on :autoconf
-      depends_on :automake
-      depends_on :libtool
-    end
+  bottle do
+    sha256 "c747fd1c9b09ac4bc186bf5294317cd506ce1fd733b892b7df19c68e39505670" => :el_capitan
+    sha256 "d2200eebec692898c5684a837cf96832fbd877cc92ec57d1e9730e454a9e94c5" => :yosemite
+    sha256 "6bb14866f48391c2d1f44f7acd2c6fd709221f890147608b176ccfa49198a251" => :mavericks
   end
 
   head do
-    url 'svn://svn.valgrind.org/valgrind/trunk'
+    url "svn://svn.valgrind.org/valgrind/trunk"
 
-    depends_on :autoconf
-    depends_on :automake
-    depends_on :libtool
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
   end
 
   depends_on :macos => :snow_leopard
 
   # Valgrind needs vcpreload_core-*-darwin.so to have execute permissions.
   # See #2150 for more information.
-  skip_clean 'lib/valgrind'
-
-  # For Xcode-only systems, we have to patch hard-coded paths, use xcrun &
-  # add missing CFLAGS. See: https://bugs.kde.org/show_bug.cgi?id=295084
-  patch do
-    url "https://gist.githubusercontent.com/2bits/3784836/raw/f046191e72445a2fc8491cb6aeeabe84517687d9/patch1.diff"
-    sha1 "a2252d977302a37873b0f2efe8aa4a4fed2eb2c2"
-  end
-
-  # Fix for 10.7.4 w/XCode-4.5, duplicate symbols. Reported upstream in
-  # https://bugs.kde.org/show_bug.cgi?id=307415
-  patch do
-    url "https://gist.githubusercontent.com/2bits/3784836/raw/f046191e72445a2fc8491cb6aeeabe84517687d9/patch1.diff"
-    sha1 "6e57aa087fafd178b594e22fd0e00ea7c0eed438"
-  end if MacOS.version == :lion
-
-  # Fix for 10.9 Mavericks. From upstream bug:
-  # https://bugs.kde.org/show_bug.cgi?id=326724#c12
-  patch :p0 do
-    url "http://bugsfiles.kde.org/attachment.cgi?id=83590"
-    sha1 "22819a4a02140974e6330f3521b240b68f1619d7"
-  end if MacOS.version == :mavericks
-
-  # Fix for Snow Leopard from MacPorts
-  patch :p0 do
-    url "https://trac.macports.org/export/118697/trunk/dports/devel/valgrind/files/patch-compat-snowleo.diff"
-    sha1 "ca22f4d49cfc9ea87469c2138b86c71f4b6b4d4d"
-  end
+  skip_clean "lib/valgrind"
 
   def install
     args = %W[
@@ -66,7 +38,7 @@ class Valgrind < Formula
       args << "--enable-only32bit"
     end
 
-    system "./autogen.sh" if build.head? || MacOS.version == :mavericks
+    system "./autogen.sh" if build.head?
     system "./configure", *args
     system "make"
     system "make", "install"

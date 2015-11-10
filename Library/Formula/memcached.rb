@@ -1,30 +1,34 @@
-require 'formula'
-
 class Memcached < Formula
-  homepage 'http://memcached.org/'
-  url 'http://www.memcached.org/files/memcached-1.4.18.tar.gz'
-  sha1 'e550ac63f1accb2c4b8384fd200a79a7e574b364'
+  desc "High performance, distributed memory object caching system"
+  homepage "http://memcached.org/"
+  url "http://www.memcached.org/files/memcached-1.4.24.tar.gz"
+  sha256 "08a426c504ecf64633151eec1058584754d2f54e62e5ed2d6808559401617e55"
 
   bottle do
-    sha1 "6e7ae41fbb731ce947c5cdc5fb37975d1d84118b" => :mavericks
-    sha1 "66df16bf96afb660efd3216773022cbac8475f1f" => :mountain_lion
-    sha1 "a5d3152d2dd647bca8faf7df46b7a3638651f65a" => :lion
+    cellar :any
+    sha256 "da6347788e34f2914ec939c1f14d5a36b70ce2e546d04bf95123a01f98084674" => :el_capitan
+    sha256 "5524972e73c753e43289f06eb615a3100831eb7c33ce15489ea65d2904344acf" => :yosemite
+    sha256 "0ff0b4273be5860850878f391e4cc6f1492fe13ffe7f80388634511210ff473f" => :mavericks
+    sha256 "ad37c20bd1dfc1275c055ec33cb3fae594ed22463a264b80f08b01db3f7d0578" => :mountain_lion
   end
 
-  depends_on 'libevent'
+  depends_on "libevent"
 
-  option "enable-sasl", "Enable SASL support -- disables ASCII protocol!"
-  option "enable-sasl-pwdb", "Enable SASL with memcached's own plain text password db support -- disables ASCII protocol!"
+  option "with-sasl", "Enable SASL support -- disables ASCII protocol!"
+  option "with-sasl-pwdb", "Enable SASL with memcached's own plain text password db support -- disables ASCII protocol!"
 
-  conflicts_with 'mysql-cluster', :because => 'both install `bin/memcached`'
+  deprecated_option "enable-sasl" => "with-sasl"
+  deprecated_option "enable-sasl-pwdb" => "with-sasl-pwdb"
+
+  conflicts_with "mysql-cluster", :because => "both install `bin/memcached`"
 
   def install
     args = ["--prefix=#{prefix}", "--disable-coverage"]
-    args << "--enable-sasl" if build.include? "enable-sasl"
-    args << "--enable-sasl-pwdb" if build.include? "enable-sasl-pwdb"
+    args << "--enable-sasl" if build.with? "sasl"
+    args << "--enable-sasl-pwdb" if build.with? "sasl-pwdb"
 
     system "./configure", *args
-    system "make install"
+    system "make", "install"
   end
 
   plist_options :manual => "#{HOMEBREW_PREFIX}/opt/memcached/bin/memcached"
@@ -51,5 +55,9 @@ class Memcached < Formula
     </dict>
     </plist>
     EOS
+  end
+
+  test do
+    system "#{bin}/memcached", "-h"
   end
 end

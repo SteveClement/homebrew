@@ -1,22 +1,23 @@
-require 'formula'
-
 class MidnightCommander < Formula
-  homepage 'http://www.midnight-commander.org/'
-  url 'http://ftp.midnight-commander.org/mc-4.8.12.tar.xz'
-  mirror 'ftp://ftp.osuosl.org/pub/midnightcommander/mc-4.8.12.tar.xz'
-  sha256 '5f2fd570a798dc0cc06374adffef8ca403588c4e73dfdf908e9a4311718153fe'
+  desc "Terminal-based visual file manager"
+  homepage "https://www.midnight-commander.org/"
+  url "http://ftp.midnight-commander.org/mc-4.8.15.tar.xz"
+  mirror "https://mirrors.ocf.berkeley.edu/debian/pool/main/m/mc/mc_4.8.15.orig.tar.xz"
+  sha256 "cf4e8f5dfe419830d56ca7e5f2495898e37ebcd05da1e47ff7041446c87fba16"
+
+  head "https://github.com/MidnightCommander/mc.git"
 
   bottle do
-    sha1 "7b5b58bbf0cbb0dbb5466e9389549de7de7b7e02" => :mavericks
-    sha1 "1c2f103e0e920a41af53fcacc315dc28e5089560" => :mountain_lion
-    sha1 "97a5c81e713a32966a62292252cfba29c4044e76" => :lion
+    sha256 "614744903b7ea7d59b79ab8722b83d4537bf04a6b14c534c9e8135ab25206798" => :el_capitan
+    sha256 "f15a295f0a18df0302fc79e2ce81e5d7950985d4160b3eeff7558e72ca810427" => :yosemite
+    sha256 "e001897e0301e20f5d04dfc6ec728fb47ebb708ca3cae59a0cfa666771794d90" => :mavericks
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'glib'
-  depends_on 'openssl' if MacOS.version <= :leopard
-  depends_on 's-lang'
-  depends_on 'libssh2'
+  depends_on "pkg-config" => :build
+  depends_on "glib"
+  depends_on "openssl"
+  depends_on "s-lang"
+  depends_on "libssh2"
 
   def install
     system "./configure", "--disable-debug",
@@ -26,6 +27,13 @@ class MidnightCommander < Formula
                           "--without-x",
                           "--with-screen=slang",
                           "--enable-vfs-sftp"
-    system "make install"
+    system "make", "install"
+
+    # https://www.midnight-commander.org/ticket/3509
+    inreplace libexec/"mc/ext.d/text.sh", "man -P cat -l ", "man -P cat "
+  end
+
+  test do
+    assert_match "GNU Midnight Commander", shell_output("#{bin}/mc --version")
   end
 end

@@ -1,41 +1,39 @@
-require 'formula'
-
 class SoundTouch < Formula
-  homepage 'http://www.surina.net/soundtouch/'
-  url 'http://www.surina.net/soundtouch/soundtouch-1.7.1.tar.gz'
-  sha256 '385eafa438a9d31ddf84b8d2f713097a3f1fc93d7abdb2fc54c484b777ee0267'
+  desc "Audio processing library"
+  homepage "http://www.surina.net/soundtouch/"
+  url "http://www.surina.net/soundtouch/soundtouch-1.9.1.tar.gz"
+  sha256 "7d22e09e5e0a5bb8669da4f97ec1d6ee324aa3e7515db7fa2554d08f5259aecd"
 
-  depends_on :autoconf
-  depends_on :automake
-  depends_on :libtool
+  bottle do
+    cellar :any
+    sha256 "ec3cebf59b93b32cfce7e257e4dbf29f69902e968c357e42c5af6bac7c501ca9" => :el_capitan
+    sha256 "f0825880145526db97129bb02690a5823e69f008bb83713fed7b79a9fabc1636" => :yosemite
+    sha256 "75ae537da4d561053c0b974dfe77da16fafc72bafbc47b84e393d142afd5be73" => :mavericks
+  end
 
-  # Fix autoreconf error
-  patch :DATA
+  option "with-integer-samples", "Build using integer samples? (default is float)"
+  option :universal
+
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
 
   def install
-    # SoundTouch has a small amount of inline assembly. The assembly has two labeled
-    # jumps. When compiling with gcc optimizations the inline assembly is duplicated
-    # and the symbol label occurs twice causing the build to fail.
-    ENV.no_optimization
-    # 64bit causes soundstretch to segfault when ever it is run.
-    ENV.m32
+    system "/bin/sh", "bootstrap"
+    args = %W[
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --prefix=#{prefix}
+    ]
+    args << "--enable-integer-samples" if build.with? "integer-samples"
 
-    # The tarball doesn't contain a configure script, so we have to bootstrap.
-    system "/bin/sh bootstrap"
-    system "./configure", "--prefix=#{prefix}", "--disable-dependency-tracking"
-    system "make install"
+    ENV.universal_binary if build.universal?
+
+    system "./configure", *args
+    system "make", "install"
+  end
+
+  test do
+    assert_match /SoundStretch v#{version} -/, shell_output("#{bin}/soundstretch 2>&1", 255)
   end
 end
-
-__END__
---- soundtouch/configure.ac
-+++ soundtouch/configure.ac
-@@ -21,7 +21,7 @@
-
- AC_INIT(SoundTouch, 1.7.0, [http://www.surina.net/soundtouch])
- AC_CONFIG_AUX_DIR(config)
--AM_CONFIG_HEADER([include/soundtouch_config.h])
-+AC_CONFIG_HEADER([include/soundtouch_config.h])
- AM_INIT_AUTOMAKE
- #AC_DISABLE_SHARED	dnl This makes libtool only build static libs
- AC_DISABLE_STATIC	dnl This makes libtool only build shared libs

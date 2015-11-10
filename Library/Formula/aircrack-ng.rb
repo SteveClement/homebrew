@@ -1,33 +1,39 @@
-require 'formula'
-
 class AircrackNg < Formula
-  homepage 'http://aircrack-ng.org/'
-  url 'http://download.aircrack-ng.org/aircrack-ng-1.1.tar.gz'
-  sha1 '16eed1a8cf06eb8274ae382150b56589b23adf77'
+  desc "Next-generation aircrack with lots of new features"
+  homepage "http://aircrack-ng.org/"
+
+  # We can't update this due to linux-only dependencies in >1.1.
+  # See https://github.com/Homebrew/homebrew/issues/29450
+  url "http://download.aircrack-ng.org/aircrack-ng-1.1.tar.gz"
+  sha256 "b136b549b7d2a2751c21793100075ea43b28de9af4c1969508bb95bcc92224ad"
+  revision 2
+
+  bottle do
+    cellar :any
+    sha256 "cb70cfa6efceada012445e9bf0300050207dc59572edc5e58795c9035e14dc43" => :el_capitan
+    sha256 "97fd0debe4e17e143facd4fa4483d7813c3edc328acd366a72d3fda29d7a6c7b" => :yosemite
+    sha256 "02efed81e48c8f70bbd1d3051e84b25815fcceb7166cb79d472f9552a4708ae2" => :mavericks
+  end
+
+  depends_on "pkg-config" => :build
+  depends_on "sqlite"
+  depends_on "openssl"
 
   # Remove root requirement from OUI update script. See:
   # https://github.com/Homebrew/homebrew/pull/12755
   patch :DATA
 
   def install
-    # Force i386, otherwise you get errors:
-    #  sha1-sse2.S:190:32-bit absolute addressing is not supported for x86-64
-    #  sha1-sse2.S:190:cannot do signed 4 byte relocation
-    %w{ CFLAGS CXXFLAGS LDFLAGS OBJCFLAGS OBJCXXFLAGS }.each do |compiler_flag|
-      ENV.remove compiler_flag, "-arch #{Hardware::CPU.arch_64_bit}"
-      ENV.append compiler_flag, "-arch #{Hardware::CPU.arch_32_bit}"
-    end
-
     # Fix incorrect OUI url
     inreplace "scripts/airodump-ng-oui-update",
       "http://standards.ieee.org/regauth/oui/oui.txt",
-      "http://standards.ieee.org/develop/regauth/oui/oui.txt"
+      "http://standards-oui.ieee.org/oui.txt"
 
     system "make", "CC=#{ENV.cc}"
     system "make", "prefix=#{prefix}", "mandir=#{man1}", "install"
   end
 
-  def caveats;  <<-EOS.undent
+  def caveats; <<-EOS.undent
     Run `airodump-ng-oui-update` install or update the Airodump-ng OUI file.
     EOS
   end

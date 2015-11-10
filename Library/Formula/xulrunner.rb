@@ -1,24 +1,11 @@
-require "formula"
-
-# speed up head clone, see: https://developer.mozilla.org/en-US/docs/Developer_Guide/Source_Code/Mercurial/Bundles
+# Speed up head clone, see: https://developer.mozilla.org/en-US/docs/Developer_Guide/Source_Code/Mercurial/Bundles
 class HgBundleDownloadStrategy < CurlDownloadStrategy
-  def hgpath
-    MercurialDownloadStrategy.new(@name, @resource).hgpath
-  end
-
-  def fetch
-    @repo = @url.split("|").last
-    @url = @url.split("|").first
-    super()
-  end
-
   def stage
-    safe_system "mkdir mozilla-central"
-    safe_system hgpath, "init", "mozilla-central"
+    mkdir "mozilla-central"
+    quiet_safe_system hgpath, "init", "mozilla-central"
     chdir
-    safe_system hgpath, "unbundle", @tarball_path
-    safe_system hgpath, "pull", @repo
-    safe_system hgpath, "update"
+    quiet_safe_system hgpath, "unbundle", cached_location
+    quiet_safe_system hgpath, "pull", "--update", meta.fetch(:repo)
   end
 end
 
@@ -33,38 +20,41 @@ class Python273Requirement < Requirement
 end
 
 class Xulrunner < Formula
+  desc "Mozilla runtime package to bootstrap XUL+XPCOM applications"
   homepage "https://developer.mozilla.org/docs/XULRunner"
-  url "https://ftp.mozilla.org/pub/mozilla.org/xulrunner/releases/28.0/source/xulrunner-28.0.source.tar.bz2"
-  sha1 "7965105b34441ebfab650930dffa4648c85ac6c6"
+
+  stable do
+    # Always use direct URLs (releases/<version>/) instead of releases/latest/
+    url "https://archive.mozilla.org/pub/mozilla.org/xulrunner/releases/33.0/source/xulrunner-33.0.source.tar.bz2"
+    sha256 "99402cf84949e06bac72d8abbdecde57e8af465727001ed6849a34632f20bcdb"
+
+    # https://github.com/Homebrew/homebrew/issues/33558
+    depends_on MaximumMacOSRequirement => :mavericks
+  end
 
   bottle do
     cellar :any
-    sha1 "74b0f65bedb9e93f02a8dd52dba5d18a8796cd72" => :mavericks
-    sha1 "7381000fb344c775bad16a65ddd213a5fd163bf1" => :mountain_lion
-    sha1 "d336479051b4079582036e017253f37f99b5af63" => :lion
-  end
-
-  devel do
-    url "https://ftp.mozilla.org/pub/mozilla.org/xulrunner/releases/29.0b1/source/xulrunner-29.0b1.source.tar.bz2"
-    sha1 "80ea2209c0ea9316b5c8dc16208514d14c410c22"
-    version "29.0b1"
+    sha1 "222b1eaabea7a2aaa4712682c9580ed70f78ceb8" => :mavericks
+    sha1 "3eb54b046978536c2161a3961e0e50a624223a0d" => :mountain_lion
   end
 
   head do
-    url "https://ftp.mozilla.org/pub/mozilla.org/firefox/bundles/mozilla-central.hg|https://hg.mozilla.org/mozilla-central/",
-      :using => HgBundleDownloadStrategy
+    url "https://archive.mozilla.org/pub/mozilla.org/firefox/bundles/mozilla-central.hg",
+      :using => HgBundleDownloadStrategy, :repo => "https://hg.mozilla.org/mozilla-central"
+
     depends_on :hg => :build
     depends_on "gettext" => :build
   end
 
   depends_on :macos => :lion # needs clang++
-  depends_on :xcode
+  depends_on :xcode => :build
   depends_on :python => :build
   depends_on Python273Requirement => :build
   depends_on "gnu-tar" => :build
   depends_on "pkg-config" => :build
   depends_on "yasm"
   depends_on "nss"
+  depends_on "nspr"
 
   fails_with :gcc do
     cause "Mozilla XULRunner only supports Clang on OS X"
@@ -77,7 +67,7 @@ class Xulrunner < Formula
   resource "autoconf213" do
     url "http://ftpmirror.gnu.org/autoconf/autoconf-2.13.tar.gz"
     mirror "https://ftp.gnu.org/gnu/autoconf/autoconf-2.13.tar.gz"
-    sha1 "e4826c8bd85325067818f19b2b2ad2b625da66fc"
+    sha256 "f0611136bee505811e9ca11ca7ac188ef5323a8e2ef19cffd3edb3cf08fd791e"
   end
 
   def install
@@ -98,6 +88,7 @@ class Xulrunner < Formula
       ac_add_options --disable-crashreporter
       ac_add_options --with-macos-sdk=#{MacOS.sdk_path}
       ac_add_options --with-nss-prefix=#{Formula["nss"].opt_prefix}
+      ac_add_options --with-nspr-prefix=#{Formula["nspr"].opt_prefix}
     EOS
     # fixed usage of bsdtar with unsupported parameters (replaced with gnu-tar)
     inreplace "toolkit/mozapps/installer/packager.mk", "$(TAR) -c --owner=0 --group=0 --numeric-owner",
@@ -109,7 +100,7 @@ class Xulrunner < Formula
     frameworks.mkpath
     if build.head?
       # update HEAD version here with every version bump
-      tar_path = "objdir/dist/xulrunner-31.0a1.en-US.mac64.tar.bz2"
+      tar_path = "objdir/dist/xulrunner-33.0a1.en-US.mac64.tar.bz2"
     else
       tar_path = "objdir/dist/xulrunner-#{version.to_s[/\d+\.\d+(\.\d+)?/]}.en-US.mac64.tar.bz2"
     end

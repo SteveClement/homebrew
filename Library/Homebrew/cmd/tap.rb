@@ -1,133 +1,54 @@
-module Homebrew extend self
+require "tap"
 
+module Homebrew
   def tap
     if ARGV.empty?
-      each_tap do |user, repo|
-        puts "#{user.basename}/#{repo.basename.sub("homebrew-", "")}" if (repo/".git").directory?
-      end
+      puts Tap.names
     elsif ARGV.first == "--repair"
-      repair_taps
+      migrate_taps :force => true
+    elsif ARGV.first == "--list-official"
+      require "official_taps"
+      puts OFFICIAL_TAPS.map { |t| "homebrew/#{t}" }
+    elsif ARGV.first == "--list-pinned"
+      puts Tap.select(&:pinned?).map(&:name)
     else
-      opoo "Already tapped!" unless install_tap(*tap_args)
-    end
-  end
-
-  def install_tap user, repo
-    raise "brew install git" unless which 'git'
-
-    # we special case homebrew so users don't have to shift in a terminal
-    repouser = if user == "homebrew" then "Homebrew" else user end
-    user = "homebrew" if user == "Homebrew"
-
-    # we downcase to avoid case-insensitive filesystem issues
-    tapd = HOMEBREW_LIBRARY/"Taps/#{user.downcase}/homebrew-#{repo.downcase}"
-    return false if tapd.directory?
-    abort unless system "git clone https://github.com/#{repouser}/homebrew-#{repo} #{tapd}"
-
-    files = []
-    tapd.find_formula { |file| files << file }
-    link_tap_formula(files)
-    puts "Tapped #{files.length} formula"
-
-    if private_tap?(repouser, repo) then puts <<-EOS.undent
-      It looks like you tapped a private repository. To avoid entering your
-      credentials each time you update, you can use git HTTP credential caching
-      or issue the following command:
-
-        cd #{tapd}
-        git remote set-url origin git@github.com:#{repouser}/homebrew-#{repo}.git
-      EOS
-    end
-
-    true
-  end
-
-  def link_tap_formula paths
-    ignores = (HOMEBREW_LIBRARY/"Formula/.gitignore").read.split rescue []
-    tapped = 0
-
-    paths.each do |path|
-      to = HOMEBREW_LIBRARY.join("Formula", path.basename)
-
-      # Unexpected, but possible, lets proceed as if nothing happened
-      to.delete if to.symlink? && to.resolved_path == path
-
+      user, repo = tap_args
+      tap = Tap.fetch(user, repo)
       begin
-        to.make_relative_symlink(path)
-      rescue SystemCallError
-        to = to.resolved_path if to.symlink?
-        opoo "Could not tap #{Tty.white}#{tap_ref(path)}#{Tty.reset} over #{Tty.white}#{tap_ref(to)}#{Tty.reset}"
-      else
-        ignores << path.basename.to_s
-        tapped += 1
+        tap.install(:clone_target => ARGV.named[1],
+                    :full_clone   => ARGV.include?("--full"))
+      rescue TapAlreadyTappedError => e
+        opoo e
       end
     end
-
-    HOMEBREW_LIBRARY.join("Formula/.gitignore").atomic_write(ignores.uniq.join("\n"))
-
-    tapped
   end
 
-  def repair_taps
-    count = 0
-    # prune dead symlinks in Formula
-    Dir["#{HOMEBREW_LIBRARY}/Formula/*.rb"].each do |fn|
-      if not File.exist? fn
-        File.delete fn
-        count += 1
-      end
+  # @deprecated this method will be removed in the future, if no external commands use it.
+  def install_tap(user, repo, clone_target = nil)
+    opoo "Homebrew.install_tap is deprecated, use Tap#install."
+    tap = Tap.fetch(user, repo)
+    begin
+      tap.install(:clone_target => clone_target, :full_clone => ARGV.include?("--full"))
+    rescue TapAlreadyTappedError
+      false
+    else
+      true
     end
-    puts "Pruned #{count} dead formula"
+  end
 
-    return unless HOMEBREW_REPOSITORY.join("Library/Taps").exist?
-
-    count = 0
-    # check symlinks are all set in each tap
-    each_tap do |user, repo|
-      files = []
-      repo.find_formula { |file| files << file }
-      count += link_tap_formula(files)
-    end
-
-    puts "Tapped #{count} formula"
+  # Migrate tapped formulae from symlink-based to directory-based structure.
+  def migrate_taps(options = {})
+    ignore = HOMEBREW_LIBRARY/"Formula/.gitignore"
+    return unless ignore.exist? || options.fetch(:force, false)
+    (HOMEBREW_LIBRARY/"Formula").children.each { |c| c.unlink if c.symlink? }
+    ignore.unlink if ignore.exist?
   end
 
   private
 
-  def each_tap
-    taps = HOMEBREW_LIBRARY.join("Taps")
-
-    if taps.directory?
-      taps.subdirs.each do |user|
-        user.subdirs.each do |repo|
-          yield user, repo
-        end
-      end
-    end
-  end
-
-  def tap_args
-    ARGV.first =~ %r{^([\w_-]+)/(homebrew-)?([\w_-]+)$}
+  def tap_args(tap_name = ARGV.named.first)
+    tap_name =~ HOMEBREW_TAP_ARGS_REGEX
     raise "Invalid tap name" unless $1 && $3
     [$1, $3]
-  end
-
-  def private_tap?(user, repo)
-    GitHub.private_repo?(user, "homebrew-#{repo}")
-  rescue GitHub::HTTPNotFoundError
-    true
-  rescue GitHub::Error
-    false
-  end
-
-  def tap_ref(path)
-    case path.to_s
-    when %r{^#{HOMEBREW_LIBRARY}/Taps/([\w_-]+)/([\w_-]+)/(.+)}
-      "#$1/#$2/#{File.basename($3, '.rb')}"
-    when %r{^#{HOMEBREW_LIBRARY}/Formula/(.+)}
-      "Homebrew/homebrew/#{File.basename($1, '.rb')}"
-    else
-      nil
-    end
   end
 end

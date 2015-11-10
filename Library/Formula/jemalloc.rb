@@ -1,23 +1,19 @@
-require 'formula'
-
 class Jemalloc < Formula
-  homepage 'http://www.canonware.com/jemalloc/download.html'
-  url 'http://www.canonware.com/download/jemalloc/jemalloc-3.6.0.tar.bz2'
-  sha1 '40c0892b172e5dc14a6cea6fe4edda7dea4f3a68'
+  desc "malloc implementation emphasizing fragmentation avoidance"
+  homepage "http://www.canonware.com/jemalloc/download.html"
+  url "https://github.com/jemalloc/jemalloc/releases/download/4.0.0/jemalloc-4.0.0.tar.bz2"
+  sha256 "214dbc74c3669b34219b0c5a55cb96f07cb12f44c834ed9ee64d1185ee6c3ef2"
   head "https://github.com/jemalloc/jemalloc.git"
 
   bottle do
     cellar :any
-    sha1 "80636f2554f09d03acfff3669c5bb40efaa8b55a" => :mavericks
-    sha1 "70e3f2ed51b17eb561965465a677e7babf2e8ab4" => :mountain_lion
-    sha1 "42ae67660585875628fec3fb12b4b391c8f40b22" => :lion
+    sha256 "2d9d3b8a36e1ffda6d5f4c5e1fabd95f496e4562a75cafba6ae975faa49e9bcd" => :el_capitan
+    sha256 "2167fc05024156684666e97527784c9a260db0c9308e604fb27fd314e4be70e7" => :yosemite
+    sha256 "5f3dbdc9c6a55e0cd7b8f53a4f001f36937d7c2f6afe92fe8cd0ce3ea39b922f" => :mavericks
   end
 
   def install
-    system './configure', '--disable-debug', "--prefix=#{prefix}"
-    system 'make install'
-
-    # This otherwise conflicts with google-perftools
-    mv "#{bin}/pprof", "#{bin}/jemalloc-pprof"
+    system "./configure", "--disable-debug", "--prefix=#{prefix}", "--with-jemalloc-prefix="
+    system "make", "install"
   end
 end

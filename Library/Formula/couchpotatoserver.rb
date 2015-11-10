@@ -1,19 +1,19 @@
-require 'formula'
-
 class Couchpotatoserver < Formula
-  homepage 'https://couchpota.to'
-  url 'https://github.com/RuudBurger/CouchPotatoServer/archive/build/2.4.0.tar.gz'
-  sha1 '63c0f89a2d49c7bf1e3b7425f48ff3d2b322d800'
+  desc "Download movies automatically"
+  homepage "https://couchpota.to"
+  url "https://github.com/RuudBurger/CouchPotatoServer/archive/build/3.0.1.tar.gz"
+  sha256 "f08f9c6ac02f66c6667f17ded1eea4c051a62bbcbadd2a8673394019878e92f7"
+  head "https://github.com/RuudBurger/CouchPotatoServer.git"
 
-  head 'https://github.com/RuudBurger/CouchPotatoServer.git'
+  bottle :unneeded
 
   def install
     prefix.install_metafiles
-    libexec.install Dir['*']
+    libexec.install Dir["*"]
     (bin+"couchpotatoserver").write(startup_script)
   end
 
-  plist_options :manual => 'couchpotatoserver'
+  plist_options :manual => "couchpotatoserver"
 
   def plist; <<-EOS.undent
     <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -48,5 +48,9 @@ class Couchpotatoserver < Formula
 
   def caveats
     "CouchPotatoServer defaults to port 5050."
+  end
+
+  test do
+    system "#{bin}/couchpotatoserver", "--help"
   end
 end

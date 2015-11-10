@@ -1,17 +1,22 @@
-require "formula"
-
 class Cspice < Formula
-  homepage "http://naif.jpl.nasa.gov/naif/index.html"
-  url "http://naif.jpl.nasa.gov/pub/naif/toolkit/C/MacIntel_OSX_AppleC_64bit/packages/cspice.tar.Z"
-  sha1 "e5546a72a2d0c7e337850a10d208014efb57d78d"
-  version "64"
+  desc "Observation geometry system for robotic space science missions"
+  homepage "https://naif.jpl.nasa.gov/naif/index.html"
+  url "https://naif.jpl.nasa.gov/pub/naif/toolkit/C/MacIntel_OSX_AppleC_64bit/packages/cspice.tar.Z"
+  version "65"
+  sha256 "c009981340de17fb1d9b55e1746f32336e1a7a3ae0b4b8d68f899ecb6e96dd5d"
 
   bottle do
-    cellar :any
-    sha1 "be5a92d5a4a1e6f19ba6b03a4fe8bca227a64d9d" => :mavericks
-    sha1 "d2b58e8648bcd288a50bf852448a8c0a27c717b3" => :mountain_lion
-    sha1 "1a41bc5c47948c6b7e9288bb2c365573461df460" => :lion
+    cellar :any_skip_relocation
+    revision 3
+    sha256 "daa552c39c338739c8c435d1b7c5c77975172905ff91b5893667da6ad60f7a7e" => :el_capitan
+    sha256 "fda8c9832e01c3b51bf68981434501632083a0a88909f62b4248f63f248a5971" => :yosemite
+    sha256 "61e4b947ed7223919ae92ddfcaf1f64267ab8d27467bcfb4de51cbdd10edbaa1" => :mavericks
   end
+
+  conflicts_with "openhmd", :because => "both install `simple` binaries"
+  conflicts_with "libftdi0", :because => "both install `simple` binaries"
+  conflicts_with "enscript", :because => "both install `states` binaries"
+  conflicts_with "fondu", :because => "both install `tobin` binaries"
 
   def install
     rm_f Dir["lib/*"]
@@ -26,6 +31,6 @@ class Cspice < Formula
   end
 
   test do
-    system "#{bin}/tobin", "#{prefix}/data/cook_01.tsp", "DELME"
+    system "#{bin}/tobin", "#{share}/cspice/data/cook_01.tsp", "DELME"
   end
 end

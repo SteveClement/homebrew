@@ -1,51 +1,51 @@
-require 'formula'
-
 class Mtr < Formula
-  homepage 'http://www.bitwizard.nl/mtr/'
+  desc "'traceroute' and 'ping' in a single tool"
+  homepage "https://www.bitwizard.nl/mtr/"
+  head "https://github.com/traviscross/mtr.git"
 
   stable do
-    url "ftp://ftp.bitwizard.nl/mtr/mtr-0.85.tar.gz"
-    sha1 "6e79584265f733bea7f1b2cb13eeb48f10e96bba"
+    url "https://github.com/traviscross/mtr/archive/v0.86.tar.gz"
+    sha256 "7912f049f9506748913e2866068b7f95b11a4e0a855322120b456c46ac9eb763"
 
+    # Fix an issue where default shell colors were overridden by mtr.
+    # https://github.com/Homebrew/homebrew/issues/43862
     patch do
-      url "https://github.com/traviscross/mtr/commit/edd425.diff"
-      sha1 "c1ed669cdf65d607f75abc729a333b180ee42343"
+      url "https://github.com/traviscross/mtr/commit/63a1f1493bfbaf7e55eb7e20b3791fc8b14cf92d.patch"
+      sha256 "67d682b29fca49d703f48bb2844e1c0e4b4635d0645d139a13352d9575336194"
     end
   end
 
-  head do
-    url 'https://github.com/traviscross/mtr.git'
-    depends_on :autoconf
-    depends_on :automake
+  bottle do
+    cellar :any_skip_relocation
+    revision 1
+    sha256 "fba272c1219a2386b034110dc129fa484597e7865b544d979386e0bfa0bc7f2e" => :el_capitan
+    sha256 "96c3b22edc936bb9b7053a1920f34a524fdc3a6d99d32f5c6313a903d6b3ff1f" => :yosemite
+    sha256 "3fb9172a95469e6ee38faeee2e67682f75dd79a6e222426674751846fee5f0a9" => :mavericks
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'gtk+' => :optional
-  depends_on 'glib' => :optional
+  depends_on "automake" => :build
+  depends_on "autoconf" => :build
+  depends_on "pkg-config" => :build
+  depends_on "gtk+" => :optional
+  depends_on "glib" => :optional
 
   def install
     # We need to add this because nameserver8_compat.h has been removed in Snow Leopard
-    ENV['LIBS'] = "-lresolv"
+    ENV["LIBS"] = "-lresolv"
     args = %W[
       --disable-dependency-tracking
       --prefix=#{prefix}
     ]
-    args << "--without-gtk" if build.without? 'gtk+'
-    args << "--without-glib" if build.without? 'glib'
-    system "./bootstrap.sh" if build.head?
+    args << "--without-gtk" if build.without? "gtk+"
+    args << "--without-glib" if build.without? "glib"
+    system "./bootstrap.sh"
     system "./configure", *args
-    system "make install"
+    system "make", "install"
   end
 
   def caveats; <<-EOS.undent
-    mtr requires superuser privileges. You can either run the program
-    via `sudo`, or change its ownership to root and set the setuid bit:
-
-      sudo chown root:wheel #{sbin}/mtr
-      sudo chmod u+s #{sbin}/mtr
-
-    In any case, you should be certain that you trust the software you
-    are executing with elevated privileges.
+    mtr requires root privileges so you will need to run `sudo mtr`.
+    You should be certain that you trust any software you grant root privileges.
     EOS
   end
 end

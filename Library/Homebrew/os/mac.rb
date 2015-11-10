@@ -1,7 +1,8 @@
-require 'hardware'
-require 'os/mac/version'
-require 'os/mac/xcode'
-require 'os/mac/xquartz'
+require "hardware"
+require "os/mac/version"
+require "os/mac/xcode"
+require "os/mac/xquartz"
+require "os/mac/pathname"
 
 module OS
   module Mac
@@ -12,14 +13,25 @@ module OS
     # This can be compared to numerics, strings, or symbols
     # using the standard Ruby Comparable methods.
     def version
-      @version ||= Version.new(MACOS_VERSION)
+      @version ||= Version.new(full_version.to_s[/10\.\d+/])
+    end
+
+    # This can be compared to numerics, strings, or symbols
+    # using the standard Ruby Comparable methods.
+    def full_version
+      @full_version ||= Version.new(`/usr/bin/sw_vers -productVersion`.chomp)
+    end
+
+    def prerelease?
+      # TODO: bump version when new OS is released
+      version >= "10.12"
     end
 
     def cat
       version.to_sym
     end
 
-    def locate tool
+    def locate(tool)
       # Don't call tools (cc, make, strip, etc.) directly!
       # Give the name of the binary you look for as a string to this method
       # in order to get the full path back as a Pathname.
@@ -27,64 +39,51 @@ module OS
         @locate[key] = if File.executable?(path = "/usr/bin/#{tool}")
           Pathname.new path
         # Homebrew GCCs most frequently; much faster to check this before xcrun
-        # This also needs to be queried if xcrun won't work, e.g. CLT-only
-        elsif File.executable?(path = "#{HOMEBREW_PREFIX}/bin/#{tool}")
-          Pathname.new path
+        elsif (path = HOMEBREW_PREFIX/"bin/#{tool}").executable?
+          path
         else
-          # If the tool isn't in /usr/bin or from Homebrew,
-          # then we first try to use xcrun to find it.
-          # If it's not there, or xcode-select is misconfigured, we have to
-          # look in dev_tools_path, and finally in xctoolchain_path, because the
-          # tools were split over two locations beginning with Xcode 4.3+.
-          xcrun_path = begin
-            path = `/usr/bin/xcrun -find #{tool} 2>/dev/null`.chomp
-            # If xcrun finds a superenv tool then discard the result.
-            path unless path.include?("Library/ENV")
-          end
-
-          paths = %W[#{xcrun_path}
-                    #{dev_tools_path}/#{tool}
-                    #{xctoolchain_path}/usr/bin/#{tool}]
-          paths.map { |p| Pathname.new(p) }.find { |p| p.executable? }
+          path = Utils.popen_read("/usr/bin/xcrun", "-no-cache", "-find", tool).chomp
+          Pathname.new(path) if File.executable?(path)
         end
       end
     end
 
-    def dev_tools_prefix
-      dev_tools_path.parent.parent
-    end
-
-    def dev_tools_path
-      @dev_tools_path ||= if tools_in_prefix? CLT::MAVERICKS_PKG_PATH
-        Pathname.new "#{CLT::MAVERICKS_PKG_PATH}/usr/bin"
-      elsif tools_in_prefix? "/"
-        Pathname.new "/usr/bin"
-      elsif not (make_path = `/usr/bin/xcrun -find make 2>/dev/null`).empty?
-        Pathname.new(make_path.chomp).dirname
-      elsif Xcode.prefix && File.exist?("#{Xcode.prefix}/usr/bin/make")
-        Pathname.new "#{Xcode.prefix}/usr/bin"
+    # Locates a (working) copy of install_name_tool, guaranteed to function
+    # whether the user has developer tools installed or not.
+    def install_name_tool
+      if (path = HOMEBREW_PREFIX/"opt/cctools/bin/install_name_tool").executable?
+        path
+      else
+        locate("install_name_tool")
       end
     end
 
-    def tools_in_prefix?(prefix)
-      %w{cc make}.all? { |tool| File.executable? "#{prefix}/usr/bin/#{tool}" }
+    # Locates a (working) copy of otool, guaranteed to function whether the user
+    # has developer tools installed or not.
+    def otool
+      if (path = HOMEBREW_PREFIX/"opt/cctools/bin/otool").executable?
+        path
+      else
+        locate("otool")
+      end
     end
 
-    def xctoolchain_path
-      # As of Xcode 4.3, some tools are located in the "xctoolchain" directory
-      @xctoolchain_path ||= begin
-        path = Pathname.new("#{Xcode.prefix}/Toolchains/XcodeDefault.xctoolchain")
-        # If only the CLT are installed, all tools will be under dev_tools_path,
-        # this path won't exist, and xctoolchain_path will be nil.
-        path if path.exist?
-      end
+    # Checks if the user has any developer tools installed, either via Xcode
+    # or the CLT. Convenient for guarding against formula builds when building
+    # is impossible.
+    def has_apple_developer_tools?
+      Xcode.installed? || CLT.installed?
+    end
+
+    def active_developer_dir
+      @active_developer_dir ||= Utils.popen_read("/usr/bin/xcode-select", "-print-path").strip
     end
 
     def sdk_path(v = version)
       (@sdk_path ||= {}).fetch(v.to_s) do |key|
         opts = []
         # First query Xcode itself
-        opts << `#{locate('xcodebuild')} -version -sdk macosx#{v} Path 2>/dev/null`.chomp
+        opts << Utils.popen_read(locate("xcodebuild"), "-version", "-sdk", "macosx#{v}", "Path").chomp
         # Xcode.prefix is pretty smart, so lets look inside to find the sdk
         opts << "#{Xcode.prefix}/Platforms/MacOSX.platform/Developer/SDKs/MacOSX#{v}.sdk"
         # Xcode < 4.3 style
@@ -94,36 +93,32 @@ module OS
     end
 
     def default_cc
-      cc = locate 'cc'
+      cc = locate "cc"
       cc.realpath.basename.to_s rescue nil
     end
 
     def default_compiler
       case default_cc
-        when /^gcc-4.0/ then :gcc_4_0
-        when /^gcc/ then :gcc
-        when /^llvm/ then :llvm
-        when "clang" then :clang
+      when /^gcc-4.0/ then :gcc_4_0
+      when /^gcc/ then :gcc
+      when /^llvm/ then :llvm
+      when "clang" then :clang
+      else
+        # guess :(
+        if Xcode.version >= "4.3"
+          :clang
+        elsif Xcode.version >= "4.2"
+          :llvm
         else
-          # guess :(
-          if Xcode.version >= "4.3"
-            :clang
-          elsif Xcode.version >= "4.2"
-            :llvm
-          else
-            :gcc
-          end
+          :gcc
+        end
       end
-    end
-
-    def default_cxx_stdlib
-      version >= :mavericks ? :libcxx : :libstdcxx
     end
 
     def gcc_40_build_version
       @gcc_40_build_version ||=
         if (path = locate("gcc-4.0"))
-          %x{#{path} --version}[/build (\d{4,})/, 1].to_i
+        `#{path} --version`[/build (\d{4,})/, 1].to_i
         end
     end
     alias_method :gcc_4_0_build_version, :gcc_40_build_version
@@ -131,65 +126,60 @@ module OS
     def gcc_42_build_version
       @gcc_42_build_version ||=
         begin
-          gcc = MacOS.locate('gcc-4.2')
-          gcc ||= Formula.factory('apple-gcc42').opt_prefix/'bin/gcc-4.2' rescue nil
-          raise if gcc.nil? || !gcc.exist?
-        rescue
-          gcc = nil
-        end
-
-        if gcc && gcc.realpath.basename.to_s !~ /^llvm/
-          %x{#{gcc} --version}[/build (\d{4,})/, 1].to_i
+          gcc = MacOS.locate("gcc-4.2") || HOMEBREW_PREFIX.join("opt/apple-gcc42/bin/gcc-4.2")
+          if gcc.exist? && gcc.realpath.basename.to_s !~ /^llvm/
+            `#{gcc} --version`[/build (\d{4,})/, 1].to_i
+          end
         end
     end
     alias_method :gcc_build_version, :gcc_42_build_version
 
     def llvm_build_version
-      # for Xcode 3 on OS X 10.5 this will not exist
-      # NOTE may not be true anymore but we can't test
       @llvm_build_version ||=
         if (path = locate("llvm-gcc")) && path.realpath.basename.to_s !~ /^clang/
-          %x{#{path} --version}[/LLVM build (\d{4,})/, 1].to_i
+        `#{path} --version`[/LLVM build (\d{4,})/, 1].to_i
         end
     end
 
     def clang_version
       @clang_version ||=
         if (path = locate("clang"))
-          %x{#{path} --version}[/(?:clang|LLVM) version (\d\.\d)/, 1]
+        `#{path} --version`[/(?:clang|LLVM) version (\d\.\d)/, 1]
         end
     end
 
     def clang_build_version
       @clang_build_version ||=
         if (path = locate("clang"))
-          %x{#{path} --version}[%r[clang-(\d{2,})], 1].to_i
+        `#{path} --version`[/clang-(\d{2,})/, 1].to_i
         end
     end
 
     def non_apple_gcc_version(cc)
-      path = Formula.factory("gcc").opt_prefix/"bin/#{cc}"
-      path = nil unless path.exist?
+      (@non_apple_gcc_version ||= {}).fetch(cc) do
+        path = HOMEBREW_PREFIX.join("opt", "gcc", "bin", cc)
+        path = locate(cc) unless path.exist?
+        version = `#{path} --version`[/gcc(?:-\d(?:\.\d)? \(.+\))? (\d\.\d\.\d)/, 1] if path
+        @non_apple_gcc_version[cc] = version
+      end
+    end
 
-      return unless path ||= locate(cc)
-
-      ivar = "@#{cc.gsub(/(-|\.)/, '')}_version"
-      return instance_variable_get(ivar) if instance_variable_defined?(ivar)
-
-      `#{path} --version` =~ /gcc(-\d\.\d \(GCC\))? (\d\.\d\.\d)/
-      instance_variable_set(ivar, $2)
+    def clear_version_cache
+      @gcc_40_build_version = @gcc_42_build_version = @llvm_build_version = nil
+      @clang_version = @clang_build_version = nil
+      @non_apple_gcc_version = {}
     end
 
     # See these issues for some history:
-    # http://github.com/Homebrew/homebrew/issues/13
-    # http://github.com/Homebrew/homebrew/issues/41
-    # http://github.com/Homebrew/homebrew/issues/48
+    # https://github.com/Homebrew/homebrew/issues/13
+    # https://github.com/Homebrew/homebrew/issues/41
+    # https://github.com/Homebrew/homebrew/issues/48
     def macports_or_fink
       paths = []
 
       # First look in the path because MacPorts is relocatable and Fink
       # may become relocatable in the future.
-      %w{port fink}.each do |ponk|
+      %w[port fink].each do |ponk|
         path = which(ponk)
         paths << path unless path.nil?
       end
@@ -197,7 +187,7 @@ module OS
       # Look in the standard locations, because even if port or fink are
       # not in the path they can still break builds if the build scripts
       # have these paths baked in.
-      %w{/sw/bin/fink /opt/local/bin/port}.each do |ponk|
+      %w[/sw/bin/fink /opt/local/bin/port].each do |ponk|
         path = Pathname.new(ponk)
         paths << path if path.exist?
       end
@@ -206,7 +196,7 @@ module OS
       # read-only in order to try out Homebrew, but this doens't work as
       # some build scripts error out when trying to read from these now
       # unreadable paths.
-      %w{/sw /opt/local}.map { |p| Pathname.new(p) }.each do |path|
+      %w[/sw /opt/local].map { |p| Pathname.new(p) }.each do |path|
         paths << path if path.exist? && !path.readable?
       end
 
@@ -214,7 +204,7 @@ module OS
     end
 
     def prefer_64_bit?
-      Hardware::CPU.is_64_bit? and version > :leopard
+      Hardware::CPU.is_64_bit? && version > :leopard
     end
 
     def preferred_arch
@@ -251,6 +241,18 @@ module OS
       "5.0.2" => { :clang => "5.0", :clang_build => 500 },
       "5.1"   => { :clang => "5.1", :clang_build => 503 },
       "5.1.1" => { :clang => "5.1", :clang_build => 503 },
+      "6.0"   => { :clang => "6.0", :clang_build => 600 },
+      "6.0.1" => { :clang => "6.0", :clang_build => 600 },
+      "6.1"   => { :clang => "6.0", :clang_build => 600 },
+      "6.1.1" => { :clang => "6.0", :clang_build => 600 },
+      "6.2"   => { :clang => "6.0", :clang_build => 600 },
+      "6.3"   => { :clang => "6.1", :clang_build => 602 },
+      "6.3.1" => { :clang => "6.1", :clang_build => 602 },
+      "6.3.2" => { :clang => "6.1", :clang_build => 602 },
+      "6.4"   => { :clang => "6.1", :clang_build => 602 },
+      "7.0"   => { :clang => "7.0", :clang_build => 700 },
+      "7.0.1" => { :clang => "7.0", :clang_build => 700 },
+      "7.1"   => { :clang => "7.0", :clang_build => 700 },
     }
 
     def compilers_standard?
@@ -272,19 +274,19 @@ module OS
 
     def app_with_bundle_id(*ids)
       path = mdfind(*ids).first
-      Pathname.new(path) unless path.nil? or path.empty?
+      Pathname.new(path) unless path.nil? || path.empty?
     end
 
     def mdfind(*ids)
       return [] unless OS.mac?
       (@mdfind ||= {}).fetch(ids) do
-        @mdfind[ids] = `/usr/bin/mdfind "#{mdfind_query(*ids)}"`.split("\n")
+        @mdfind[ids] = Utils.popen_read("/usr/bin/mdfind", mdfind_query(*ids)).split("\n")
       end
     end
 
     def pkgutil_info(id)
       (@pkginfo ||= {}).fetch(id) do |key|
-        @pkginfo[key] = `/usr/sbin/pkgutil --pkg-info "#{key}" 2>/dev/null`.strip
+        @pkginfo[key] = Utils.popen_read("/usr/sbin/pkgutil", "--pkg-info", key).strip
       end
     end
 

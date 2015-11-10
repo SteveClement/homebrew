@@ -1,44 +1,52 @@
-require 'formula'
-
 class Bind < Formula
-  homepage 'http://www.isc.org/software/bind/'
-  url 'http://ftp.isc.org/isc/bind9/9.9.5/bind-9.9.5.tar.gz'
-  sha1 'f3fe8000628ec57f332aec1ad9587b767208a38f'
+  desc "Implementation of the DNS protocols"
+  homepage "https://www.isc.org/downloads/bind/"
+  url "https://ftp.isc.org/isc/bind9/9.10.3/bind-9.10.3.tar.gz"
+  mirror "https://fossies.org/linux/misc/dns/bind9/9.10.3/bind-9.10.3.tar.gz"
+  sha256 "9ac33bd8754ab4b6ee449b1b2aa88e09f51cda088486f4ab1585acd920b98ff0"
+  head "https://source.isc.org/git/bind9.git"
+
+  bottle do
+    sha256 "e3e9673cf609149984a4061f3104b40c1eefdaab133c720ef992e60e09181a86" => :el_capitan
+    sha256 "03eb2417b794d4584986284b81225760ca7650a65caea60841b991a824c67597" => :yosemite
+    sha256 "d6c3322b9cfd9a4dde86e5527d106721b60924247146ca5df4348cd48586d857" => :mavericks
+  end
 
   depends_on "openssl"
+  depends_on "json-c" => :optional
 
   def install
     ENV.libxml2
     # libxml2 appends one inc dir to CPPFLAGS but bind ignores CPPFLAGS
-    ENV.append 'CFLAGS', ENV.cppflags
+    ENV.append "CFLAGS", ENV.cppflags
 
-    ENV['STD_CDEFINES'] = '-DDIG_SIGCHASE=1'
-
+    json = build.with?("json-c") ? "yes" : "no"
     system "./configure", "--prefix=#{prefix}",
                           "--enable-threads",
                           "--enable-ipv6",
-                          "--with-ssl-dir=#{Formula['openssl'].opt_prefix}"
+                          "--with-openssl=#{Formula["openssl"].opt_prefix}",
+                          "--with-libjson=#{json}"
 
-    # From the bind9 README: "Do not use a parallel 'make'."
+    # From the bind9 README: "Do not use a parallel "make"."
     ENV.deparallelize
     system "make"
-    system "make install"
+    system "make", "install"
+
+    (buildpath+"named.conf").write named_conf
+    system "#{sbin}/rndc-confgen", "-a", "-c", "#{buildpath}/rndc.key"
+    etc.install "named.conf", "rndc.key"
   end
 
   def post_install
-    # Create initial configuration/zone/ca files. (Mirrors Apple system install from 10.8)
-    unless (var + 'named').exist?
-      (var + 'named').mkpath
-      (var + 'named/localhost.zone').write localhost_zone
-      (var + 'named/named.local').write named_local
+    (var+"log/named").mkpath
+
+    # Create initial configuration/zone/ca files.
+    # (Mirrors Apple system install from 10.8)
+    unless (var+"named").exist?
+      (var+"named").mkpath
+      (var+"named/localhost.zone").write localhost_zone
+      (var+"named/named.local").write named_local
     end
-    (etc + 'named.conf').write(named_conf)
-
-    # Create initial log directory.
-    (var + 'log/named').mkpath
-
-    # Generate rndc key automatically.
-    system "#{sbin}/rndc-confgen -a -c \"#{etc}/rndc.key\"" unless (etc + 'rndc.key').exist?
   end
 
   def named_conf; <<-EOS.undent
@@ -155,5 +163,10 @@ class Bind < Formula
     </dict>
     </plist>
     EOS
+  end
+
+  test do
+    system bin/"dig", "-v"
+    system bin/"dig", "brew.sh"
   end
 end

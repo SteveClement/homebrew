@@ -1,23 +1,19 @@
-require 'formula'
-
 class Appledoc < Formula
-  homepage 'http://appledoc.gentlebytes.com/'
-  url "https://github.com/tomaz/appledoc/archive/v2.2-963.tar.gz"
-  sha1 '8491dc9ae8fa6bc69da9dcedca601529af3bf4e6'
-  version '2.2-963'
+  desc "Objective-C API documentation generator"
+  homepage "http://appledoc.gentlebytes.com/"
+  url "https://github.com/tomaz/appledoc/archive/2.2.1.tar.gz"
+  sha256 "0ec881f667dfe70d565b7f1328e9ad4eebc8699ee6dcd381f3bd0ccbf35c0337"
 
-  head 'https://github.com/tomaz/appledoc.git', :branch => 'master'
+  head "https://github.com/tomaz/appledoc.git"
 
-  depends_on :xcode
+  bottle do
+    sha256 "c723bec6cdeb0eb067d7c67cee472f20a6f1935e1bbd6b0a3aa0ec7f77fea583" => :el_capitan
+    sha256 "ada12050d25be7a3c9920b1b4e2aa8d8a1efa7d59d9e67325f4e83dab14d0f59" => :yosemite
+    sha256 "dede0bad06c61e56350c5fc812e1c507d3b2e0b73b6d062eedfe8e47f39b74fb" => :mavericks
+  end
+
+  depends_on :xcode => :build
   depends_on :macos => :lion
-
-  # Actually works with pre-503 clang, but we don't have a way to
-  # express this yet.
-  # clang 5.1 (build 503) removed support for Objective C GC, and
-  # there is no stable version of Appledoc with support for ARC yet.
-  # It's actually possible to build with GC disabled, but not advisable.
-  # See: https://github.com/tomaz/appledoc/issues/439
-  fails_with :clang
 
   def install
     xcodebuild "-project", "appledoc.xcodeproj",
@@ -33,6 +29,33 @@ class Appledoc < Formula
   end
 
   test do
-    system "#{bin}/appledoc", "--version"
+    (testpath/"test.h").write <<-EOS.undent
+      /**
+       * This is a test class. It does stuff.
+       *
+       * Here **is** some `markdown`.
+       */
+
+      @interface X : Y
+
+      /**
+       * Does a thing.
+       *
+       * @returns An instance of X.
+       * @param thing The thing to copy.
+       */
+      + (X *)thingWithThing:(X *)thing;
+
+      @end
+    EOS
+
+    system bin/"appledoc", "--project-name", "Test",
+                           "--project-company", "Homebrew",
+                           "--create-html",
+                           "--no-install-docset",
+                           "--keep-intermediate-files",
+                           "--docset-install-path", testpath,
+                           "--output", testpath,
+                           testpath/"test.h"
   end
 end

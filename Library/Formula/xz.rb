@@ -1,28 +1,28 @@
-require 'formula'
-
 # Upstream project has requested we use a mirror as the main URL
 # https://github.com/Homebrew/homebrew/pull/21419
 class Xz < Formula
-  homepage 'http://tukaani.org/xz/'
-  url 'http://fossies.org/linux/misc/xz-5.0.5.tar.gz'
-  mirror 'http://tukaani.org/xz/xz-5.0.5.tar.gz'
-  sha256 '5dcffe6a3726d23d1711a65288de2e215b4960da5092248ce63c99d50093b93a'
+  desc "General-purpose data compression with high compression ratio"
+  homepage "http://tukaani.org/xz/"
+  url "https://fossies.org/linux/misc/xz-5.2.2.tar.gz"
+  mirror "http://tukaani.org/xz/xz-5.2.2.tar.gz"
+  sha256 "73df4d5d34f0468bd57d09f2d8af363e95ed6cc3a4a86129d2f2c366259902a2"
 
   bottle do
     cellar :any
-    revision 3
-    sha1 "d42b938770762ca46351f73f247b4b092d91c2ae" => :mavericks
-    sha1 "16eb170fe01074ed3f49eb14c37f0608f208f555" => :mountain_lion
-    sha1 "3052beb5c60568455182ee28129ca47648fd0659" => :lion
+    sha256 "7cfefbef7669a6959eb019ffba2d06b2c8f041fb826e89126c1ced23f03e2029" => :el_capitan
+    sha256 "cd13b4dea278b179eceebed9f07b79c95e7416d7cac0ba095173cc463149df46" => :yosemite
+    sha256 "9a5b520ae6a4cc728a7f5c4a15deb1dc2f150e3665d5afbc802b07f2a4fbd6e6" => :mavericks
   end
 
   option :universal
 
   def install
     ENV.universal_binary if build.universal?
-    system "./configure", "--disable-debug", "--disable-dependency-tracking",
+    system "./configure", "--disable-debug",
+                          "--disable-dependency-tracking",
+                          "--disable-silent-rules",
                           "--prefix=#{prefix}"
-    system "make install"
+    system "make", "install"
   end
 
   test do

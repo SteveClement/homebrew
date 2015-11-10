@@ -1,41 +1,59 @@
-require 'dependable'
-require 'dependency'
-require 'build_environment'
-require 'extend/ENV'
+require "dependable"
+require "dependency"
+require "dependencies"
+require "build_environment"
 
 # A base class for non-formula requirements needed by formulae.
 # A "fatal" requirement is one that will fail the build if it is not present.
 # By default, Requirements are non-fatal.
 class Requirement
   include Dependable
-  extend BuildEnvironmentDSL
 
-  attr_reader :tags, :name, :option_name
+  attr_reader :tags, :name, :cask, :download, :default_formula
+  alias_method :option_name, :name
 
-  def initialize(tags=[])
+  def initialize(tags = [])
+    @default_formula = self.class.default_formula
+    @cask ||= self.class.cask
+    @download ||= self.class.download
+    tags.each do |tag|
+      next unless tag.is_a? Hash
+      @cask ||= tag[:cask]
+      @download ||= tag[:download]
+    end
     @tags = tags
     @tags << :build if self.class.build
     @name ||= infer_name
-    @option_name = @name
   end
 
   # The message to show when the requirement is not met.
-  def message; "" end
+  def message
+    s = ""
+    if cask
+      s +=  <<-EOS.undent
+
+        You can install with Homebrew Cask:
+          brew install Caskroom/cask/#{cask}
+      EOS
+    end
+
+    if download
+      s += <<-EOS.undent
+
+        You can download from:
+          #{download}
+      EOS
+    end
+    s
+  end
 
   # Overriding #satisfied? is deprecated.
   # Pass a block or boolean to the satisfy DSL method instead.
   def satisfied?
-    result = self.class.satisfy.yielder do |proc|
-      instance_eval(&proc)
-    end
-
-    infer_env_modification(result)
+    result = self.class.satisfy.yielder { |p| instance_eval(&p) }
+    @satisfied_result = result
     !!result
   end
-
-  # Can overridden to optionally prevent a formula with this requirement from
-  # pouring a bottle.
-  def pour_bottle?; true end
 
   # Overriding #fatal? is deprecated.
   # Pass a boolean to the fatal DSL method instead.
@@ -52,49 +70,61 @@ class Requirement
   # Note: #satisfied? should be called before invoking this method
   # as the env modifications may depend on its side effects.
   def modify_build_environment
-    env.modify_build_environment(self)
+    instance_eval(&env_proc) if env_proc
+
+    # XXX If the satisfy block returns a Pathname, then make sure that it
+    # remains available on the PATH. This makes requirements like
+    #   satisfy { which("executable") }
+    # work, even under superenv where "executable" wouldn't normally be on the
+    # PATH.
+    # This is undocumented magic and it should be removed, but we need to add
+    # a way to declare path-based requirements that work with superenv first.
+    if Pathname === @satisfied_result
+      parent = @satisfied_result.parent
+      unless ENV["PATH"].split(File::PATH_SEPARATOR).include?(parent.to_s)
+        ENV.append_path("PATH", parent)
+      end
+    end
   end
 
   def env
-    @env ||= self.class.env
+    self.class.env
   end
 
-  def eql?(other)
+  def env_proc
+    self.class.env_proc
+  end
+
+  def ==(other)
     instance_of?(other.class) && name == other.name && tags == other.tags
   end
+  alias_method :eql?, :==
 
   def hash
-    [name, *tags].hash
+    name.hash ^ tags.hash
   end
 
   def inspect
-    "#<#{self.class}: #{name.inspect} #{tags.inspect}>"
+    "#<#{self.class.name}: #{name.inspect} #{tags.inspect}>"
   end
 
   def to_dependency
     f = self.class.default_formula
     raise "No default formula defined for #{inspect}" if f.nil?
-    Dependency.new(f, tags, method(:modify_build_environment), name)
+    if HOMEBREW_TAP_FORMULA_REGEX === f
+      TapDependency.new(f, tags, method(:modify_build_environment), name)
+    else
+      Dependency.new(f, tags, method(:modify_build_environment), name)
+    end
   end
 
   private
 
   def infer_name
-    klass = self.class.to_s
-    klass.sub!(/(Dependency|Requirement)$/, '')
-    klass.sub!(/^(\w+::)*/, '')
+    klass = self.class.name || self.class.to_s
+    klass.sub!(/(Dependency|Requirement)$/, "")
+    klass.sub!(/^(\w+::)*/, "")
     klass.downcase
-  end
-
-  def infer_env_modification(o)
-    case o
-    when Pathname
-      self.class.env do
-        unless ENV["PATH"].split(File::PATH_SEPARATOR).include?(o.parent.to_s)
-          ENV.append_path("PATH", o.parent)
-        end
-      end
-    end
   end
 
   def which(cmd)
@@ -102,15 +132,29 @@ class Requirement
   end
 
   class << self
-    attr_rw :fatal, :build, :default_formula
+    include BuildEnvironmentDSL
 
-    def satisfy(options={}, &block)
+    attr_reader :env_proc
+    attr_rw :fatal, :default_formula
+    attr_rw :cask, :download
+    # build is deprecated, use `depends_on <requirement> => :build` instead
+    attr_rw :build
+
+    def satisfy(options = {}, &block)
       @satisfied ||= Requirement::Satisfier.new(options, &block)
+    end
+
+    def env(*settings, &block)
+      if block_given?
+        @env_proc = block
+      else
+        super
+      end
     end
   end
 
   class Satisfier
-    def initialize(options={}, &block)
+    def initialize(options, &block)
       case options
       when Hash
         @options = { :build_env => true }
@@ -125,6 +169,7 @@ class Requirement
       if instance_variable_defined?(:@satisfied)
         @satisfied
       elsif @options[:build_env]
+        require "extend/ENV"
         ENV.with_build_environment { yield @proc }
       else
         yield @proc
@@ -139,7 +184,7 @@ class Requirement
     # The default filter, which is applied when a block is not given, omits
     # optionals and recommendeds based on what the dependent has asked for.
     def expand(dependent, &block)
-      reqs = ComparableSet.new
+      reqs = Requirements.new
 
       formulae = dependent.recursive_dependencies.map(&:to_formula)
       formulae.unshift(dependent)
@@ -157,7 +202,7 @@ class Requirement
       reqs
     end
 
-    def prune?(dependent, req, &block)
+    def prune?(dependent, req, &_block)
       catch(:prune) do
         if block_given?
           yield dependent, req

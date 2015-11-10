@@ -1,24 +1,22 @@
-require 'formula'
-
 class AtSpi2Atk < Formula
-  homepage 'http://a11y.org'
-  url 'http://ftp.gnome.org/pub/gnome/sources/at-spi2-atk/2.12/at-spi2-atk-2.12.0.tar.xz'
-  sha256 '3b5467c9f169812bc36a4245355b7deedea0a62eb22153df96ced88dcd1c3633'
+  desc "Accessibility Toolkit GTK+ module"
+  homepage "http://a11y.org"
+  url "https://download.gnome.org/sources/at-spi2-atk/2.18/at-spi2-atk-2.18.1.tar.xz"
+  sha256 "c4b15f9386d34d464ddad5f6cc85669742c016df87141ceee93513245979c12d"
 
   bottle do
     cellar :any
-    sha1 "0332a20b531627abf55f9cea631fcdff17d77963" => :mavericks
-    sha1 "a31be6abe965405218fb8dc0aee7cc3391b48575" => :mountain_lion
-    sha1 "f29c7a7b5b49cddb9ba41b0276e9d2b7f4fd1b31" => :lion
+    sha256 "a88de6d29ff859aa289347be7451348642dcd41b986362a1eb65c323443146fd" => :el_capitan
+    sha256 "622fb5001ed08bddb08e92a00b45f0ca2a9f0f555eb8605bfe3cb1525bb5239f" => :yosemite
+    sha256 "345365f5404530d5b28710325bb412338af39671b967a39b1afff91d63f9e315" => :mavericks
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'at-spi2-core'
-  depends_on 'atk'
+  depends_on "pkg-config" => :build
+  depends_on "at-spi2-core"
+  depends_on "atk"
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
-    system "make install"
+    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
+    system "make", "install"
   end
 end

@@ -1,9 +1,10 @@
-require 'formula'
-
 class Geogit < Formula
-  homepage 'http://www.geogit.org'
-  url 'https://downloads.sourceforge.net/project/geogit/geogit-0.7.1/geogit-cli-app-0.7.1.zip'
-  sha1 'c28b3c353db98c7d08847ad4e87ecebcf98e37b5'
+  desc "Distributed version control for geospatial data"
+  homepage "http://www.geogit.org"
+  url "https://downloads.sourceforge.net/project/geogit/geogit-0.10.0/geogit-cli-app-0.10.0.zip"
+  sha256 "b1256a2375aa38b5ba22a83d53f9befd3a7495fea5312884810744a43db77720"
+
+  bottle :unneeded
 
   def install
     bin.install "bin/geogit", "bin/geogit-console"

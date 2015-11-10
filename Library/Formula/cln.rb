@@ -1,22 +1,30 @@
-require 'formula'
-
 class Cln < Formula
-  homepage 'http://www.ginac.de/CLN/'
-  url 'http://www.ginac.de/CLN/cln-1.3.3.tar.bz2'
-  sha1 '11c56780eb83ed54f2ad1ecef7f0dc0f609c426d'
+  desc "Class Library for Numbers"
+  homepage "http://www.ginac.de/CLN/"
+  url "http://www.ginac.de/CLN/cln-1.3.4.tar.bz2"
+  sha256 "2d99d7c433fb60db1e28299298a98354339bdc120d31bb9a862cafc5210ab748"
 
-  depends_on 'gmp'
-
-  # Patch for Clang from MacPorts
-  patch do
-    url "https://trac.macports.org/export/114806/trunk/dports/math/cln/files/patch-clang.diff"
-    sha1 "0e95e34b7b821fe8ddfc04c099cf5b9d72fc9093"
+  bottle do
+    cellar :any
+    revision 1
+    sha256 "b816f165673f58fb952669c7fa542b2fe52257e6572853785efee0048ea35d6a" => :el_capitan
+    sha256 "95e74408a4b9dca4e7a939d2ff79e9ab16f3193622027d3d741eb6fc9cc7695d" => :yosemite
+    sha256 "048947d9343c8848897be272cae74d98cd869fa3d64fa6f2bfe82cb68ca100b9" => :mavericks
   end
+
+  option "without-check", "Skip compile-time checks (Not recommended)"
+
+  depends_on "gmp"
 
   def install
     system "./configure", "--prefix=#{prefix}",
-                          "--disable-dependency-tracking",
-                          "--with-gmp=#{HOMEBREW_PREFIX}"
-    system "make install"
+                          "--disable-dependency-tracking"
+    system "make"
+    system "make", "check" if build.with? "check"
+    system "make", "install"
+  end
+
+  test do
+    assert_match "3.14159", shell_output("#{bin}/pi 6")
   end
 end

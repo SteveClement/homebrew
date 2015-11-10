@@ -1,21 +1,15 @@
-require 'testing_env'
-require 'dependencies'
-require 'dependency'
+require "testing_env"
+require "dependencies"
+require "dependency"
+require "requirements"
 
-class DependenciesTests < Test::Unit::TestCase
+class DependenciesTests < Homebrew::TestCase
   def setup
     @deps = Dependencies.new
   end
 
   def test_shovel_returns_self
-    assert_same @deps, (@deps << Dependency.new("foo"))
-  end
-
-  def test_no_duplicate_deps
-    @deps << Dependency.new("foo")
-    @deps << Dependency.new("foo", :build)
-    @deps << Dependency.new("foo", :build)
-    assert_equal 1, @deps.count
+    assert_same @deps, @deps << Dependency.new("foo")
   end
 
   def test_preserves_order
@@ -31,7 +25,7 @@ class DependenciesTests < Test::Unit::TestCase
   def test_repetition
     @deps << Dependency.new("foo")
     @deps << Dependency.new("bar")
-    assert_equal %q{foo, bar}, @deps*', '
+    assert_equal "foo, bar", @deps*", "
   end
 
   def test_to_a
@@ -70,11 +64,52 @@ class DependenciesTests < Test::Unit::TestCase
     b << dep
 
     assert_equal a, b
-    assert a.eql?(b)
+    assert_eql a, b
 
     b << Dependency.new("bar", [:optional])
 
-    assert_not_equal a, b
-    assert !a.eql?(b)
+    refute_equal a, b
+    refute_eql a, b
+  end
+
+  def test_empty
+    a = Dependencies.new
+    assert a.empty?
+    a << Dependency.new("foo")
+    refute a.empty?
+  end
+
+  def test_inspect
+    a = Dependencies.new
+    assert_equal "#<Dependencies: []>", a.inspect
+    a << Dependency.new("foo")
+    assert_equal "#<Dependencies: [#<Dependency: \"foo\" []>]>", a.inspect
+  end
+end
+
+class RequirementsTests < Homebrew::TestCase
+  def setup
+    @reqs = Requirements.new
+  end
+
+  def test_shovel_returns_self
+    assert_same @reqs, @reqs << Object.new
+  end
+
+  def test_merging_multiple_dependencies
+    @reqs << X11Requirement.new << X11Requirement.new
+    assert_equal 1, @reqs.count
+    @reqs << Requirement.new
+    assert_equal 2, @reqs.count
+  end
+
+  def test_comparison_prefers_larger
+    @reqs << X11Requirement.new << X11Requirement.new("x11", %w[2.6])
+    assert_equal [X11Requirement.new("x11", %w[2.6])], @reqs.to_a
+  end
+
+  def test_comparison_does_not_merge_smaller
+    @reqs << X11Requirement.new("x11", %w[2.6]) << X11Requirement.new
+    assert_equal [X11Requirement.new("x11", %w[2.6])], @reqs.to_a
   end
 end

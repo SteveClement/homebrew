@@ -1,9 +1,8 @@
-require 'formula'
-
 class PhoronixTestSuite < Formula
-  homepage 'http://www.phoronix-test-suite.com/'
-  url 'http://www.phoronix-test-suite.com/download.php?file=phoronix-test-suite-5.0.1'
-  sha1 '2dbaacd681a52941130761a5a0a2427653f119ad'
+  desc "Automated testing framework"
+  homepage "http://www.phoronix-test-suite.com/"
+  url "http://www.phoronix-test-suite.com/download.php?file=phoronix-test-suite-5.2.1"
+  sha256 "1186f460691e2fe7a07df5edb8d8ed1ac0c65327512e646da2b2e3a60dda6cd9"
 
   patch :DATA
 
@@ -16,7 +15,7 @@ end
 __END__
 --- a/install-sh	2012-01-04 08:43:26.000000000 -0800
 +++ b/install-sh	2012-04-23 20:34:21.000000000 -0700
-@@ -55,11 +55,11 @@
+@@ -56,11 +56,11 @@
  mkdir -p $DESTDIR$INSTALL_PREFIX/share/man/man1/
  mkdir -p $DESTDIR$INSTALL_PREFIX/share/phoronix-test-suite/
  mkdir -p $DESTDIR$INSTALL_PREFIX/share/doc/phoronix-test-suite/
@@ -32,7 +31,7 @@ __END__
  
  cd documentation/
  cp -r * $DESTDIR$INSTALL_PREFIX/share/doc/phoronix-test-suite/
-@@ -67,7 +67,7 @@
+@@ -68,7 +68,7 @@
  rm -rf $DESTDIR$INSTALL_PREFIX/share/doc/phoronix-test-suite/man-pages/
  
  cp documentation/man-pages/*.1 $DESTDIR$INSTALL_PREFIX/share/man/man1/
@@ -41,7 +40,7 @@ __END__
  cp pts-core/static/images/phoronix-test-suite.png $DESTDIR$INSTALL_PREFIX/share/icons/hicolor/48x48/apps/phoronix-test-suite.png
  cp pts-core/static/phoronix-test-suite.desktop $DESTDIR$INSTALL_PREFIX/share/applications/
  cp pts-core/static/phoronix-test-suite-launcher.desktop $DESTDIR$INSTALL_PREFIX/share/applications/
-@@ -88,7 +88,7 @@
+@@ -90,7 +90,7 @@
  # sed 's:\$url = PTS_PATH . \"documentation\/index.html\";:\$url = \"'"$INSTALL_PREFIX"'\/share\/doc\/packages\/phoronix-test-suite\/index.html\";:g' pts-core/commands/gui_gtk.php > $DESTDIR$INSTALL_PREFIX/share/phoronix-test-suite/pts-core/commands/gui_gtk.php
  
  # XDG MIME OpenBenchmarking support
@@ -50,7 +49,7 @@ __END__
  then
  	#No chroot
  	xdg-mime install pts-core/openbenchmarking.org/openbenchmarking-mime.xml
-@@ -102,7 +102,7 @@
+@@ -104,7 +104,7 @@
  
  fi
  

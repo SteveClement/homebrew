@@ -1,137 +1,89 @@
-require 'formula'
-
 class Trafficserver < Formula
-  homepage 'http://trafficserver.apache.org/'
-  url 'http://www.apache.org/dyn/closer.cgi?path=trafficserver/trafficserver-4.2.0.tar.bz2'
-  mirror 'http://archive.apache.org/dist/trafficserver/trafficserver-4.2.0.tar.bz2'
-  sha1 'feb1d45fecccbc00fa988e768909a6664a43a354'
+  desc "HTTP/1.1 compliant caching proxy server"
+  homepage "https://trafficserver.apache.org/"
+  url "https://www.apache.org/dyn/closer.cgi?path=trafficserver/trafficserver-6.0.0.tar.bz2"
+  mirror "https://archive.apache.org/dist/trafficserver/trafficserver-6.0.0.tar.bz2"
+  sha256 "1ef6a9ed1d53532bbe2c294d86d4103a0140e3f23a27970936366f1bc8feb3d1"
 
-  depends_on 'pcre'
+  bottle do
+    revision 2
+    sha256 "b815aa4c085ee9ea10064260fe58e0d46264d283915ceaac3f48ce96b1e94ac6" => :el_capitan
+    sha256 "ab5d00a893335cc2cd763819b617d20b7c4675b4276bd665d2db6695d382f28c" => :yosemite
+    sha256 "70f63d966cfbe960218fe8cc12b8fe5644a4d619642446ba45ec5a81fc99752c" => :mavericks
+  end
 
-  #remove some amd64 compiler options that fail on Snow Leopard
-  patch :DATA if MacOS.version == :snow_leopard
+  head do
+    url "https://github.com/apache/trafficserver.git"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool"  => :build
+  end
+
+  option "with-spdy", "Build with SPDY protocol support"
+  option "with-experimental-plugins", "Enable experimental plugins"
+
+  depends_on "openssl"
+  depends_on "pcre"
+
+  if build.with? "spdy"
+    depends_on "spdylay"
+    depends_on "pkg-config" => :build
+  end
+
+  needs :cxx11
 
   def install
+    ENV.cxx11
     # Needed for correct ./configure detections.
     ENV.enable_warnings
     # Needed for OpenSSL headers on Lion.
     ENV.append_to_cflags "-Wno-deprecated-declarations"
-    system "./configure", "--prefix=#{prefix}",
-                          "--mandir=#{man}",
-                          "--with-user=#{ENV['USER']}",
-                          "--with-group=admin"
-    system "make install"
+    # Fix lib/perl/Makefile.pl failing with:
+    # Only one of PREFIX or INSTALL_BASE can be given.  Not both.
+    ENV.delete "PERL_MM_OPT"
+
+    (var/"log/trafficserver").mkpath
+    (var/"trafficserver").mkpath
+
+    args = %W[
+      --prefix=#{prefix}
+      --mandir=#{man}
+      --localstatedir=#{var}
+      --sysconfdir=#{etc}/trafficserver
+      --with-openssl=#{Formula["openssl"].opt_prefix}
+      --with-group=admin
+      --disable-silent-rules
+    ]
+
+    args << "--enable-spdy" if build.with? "spdy"
+    args << "--enable-experimental-plugins" if build.with? "experimental-plugins"
+
+    system "autoreconf", "-fvi" if build.head?
+    system "./configure", *args
+
+    # Fix wrong username in the generated startup script for bottles.
+    inreplace "rc/trafficserver.in", "@pkgsysuser@", "$USER"
+    if build.with? "experimental-plugins"
+      # Disable mysql_remap plugin due to missing symbol compile error:
+      # https://issues.apache.org/jira/browse/TS-3490
+      inreplace "plugins/experimental/Makefile", " mysql_remap", ""
+    end
+
+    system "make" if build.head?
+    system "make", "install"
+  end
+
+  def post_install
+    config = etc/"trafficserver/records.config"
+    return unless File.exist?(config)
+    return if File.read(config).include?("proxy.config.admin.user_id STRING #{ENV["USER"]}")
+
+    File.open("#{config}", "a") do |f|
+      f.puts "CONFIG proxy.config.admin.user_id STRING #{ENV["USER"]}"
+    end
   end
 
   test do
-    system "#{bin}/trafficserver", "status"
+    assert_match "Apache Traffic Server is not running.", shell_output("#{bin}/trafficserver status").chomp
   end
 end
-
-__END__
-diff --git a/configure b/configure
-index 49add2a..e478b34 100755
---- a/configure
-+++ b/configure
-@@ -24109,48 +24109,6 @@ $as_echo "yes" >&6; }
-
- else
-
--
--  if test "x$CXXFLAGS" = "x"; then
--    test "x$verbose" = "xyes" && echo "  setting CXXFLAGS to \"-mcx16\""
--    CXXFLAGS="-mcx16"
--  else
--    ats_addto_bugger="-mcx16"
--    for i in $ats_addto_bugger; do
--      ats_addto_duplicate="0"
--      for j in $CXXFLAGS; do
--        if test "x$i" = "x$j"; then
--          ats_addto_duplicate="1"
--          break
--        fi
--      done
--      if test $ats_addto_duplicate = "0"; then
--        test "x$verbose" = "xyes" && echo "  adding \"$i\" to CXXFLAGS"
--        CXXFLAGS="$CXXFLAGS $i"
--      fi
--    done
--  fi
--
--
--  if test "x$CFLAGS" = "x"; then
--    test "x$verbose" = "xyes" && echo "  setting CFLAGS to \"-mcx16\""
--    CFLAGS="-mcx16"
--  else
--    ats_addto_bugger="-mcx16"
--    for i in $ats_addto_bugger; do
--      ats_addto_duplicate="0"
--      for j in $CFLAGS; do
--        if test "x$i" = "x$j"; then
--          ats_addto_duplicate="1"
--          break
--        fi
--      done
--      if test $ats_addto_duplicate = "0"; then
--        test "x$verbose" = "xyes" && echo "  adding \"$i\" to CFLAGS"
--        CFLAGS="$CFLAGS $i"
--      fi
--    done
--  fi
--
-     ats_save_CFLAGS=$CFLAGS
-  CFLAGS="$CFLAGS $CFLAGS_WARN"
-  if test "$ac_cv_c_compiler_gnu" = "yes"; then
-@@ -24204,52 +24162,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
-
-
-
--if test "x$has_128bit_cas" = "x1"; then :
--
--
--  if test "x$CFLAGS" = "x"; then
--    test "x$verbose" = "xyes" && echo "  setting CFLAGS to \"-mcx16\""
--    CFLAGS="-mcx16"
--  else
--    ats_addto_bugger="-mcx16"
--    for i in $ats_addto_bugger; do
--      ats_addto_duplicate="0"
--      for j in $CFLAGS; do
--        if test "x$i" = "x$j"; then
--          ats_addto_duplicate="1"
--          break
--        fi
--      done
--      if test $ats_addto_duplicate = "0"; then
--        test "x$verbose" = "xyes" && echo "  adding \"$i\" to CFLAGS"
--        CFLAGS="$CFLAGS $i"
--      fi
--    done
--  fi
--
--
--  if test "x$CXXFLAGS" = "x"; then
--    test "x$verbose" = "xyes" && echo "  setting CXXFLAGS to \"-mcx16\""
--    CXXFLAGS="-mcx16"
--  else
--    ats_addto_bugger="-mcx16"
--    for i in $ats_addto_bugger; do
--      ats_addto_duplicate="0"
--      for j in $CXXFLAGS; do
--        if test "x$i" = "x$j"; then
--          ats_addto_duplicate="1"
--          break
--        fi
--      done
--      if test $ats_addto_duplicate = "0"; then
--        test "x$verbose" = "xyes" && echo "  adding \"$i\" to CXXFLAGS"
--        CXXFLAGS="$CXXFLAGS $i"
--      fi
--    done
--  fi
--
--
--fi
-
- # Check for POSIX capabilities library.
- # If we don't find it, disable checking for header.

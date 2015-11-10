@@ -1,16 +1,34 @@
-require 'formula'
-
 class Bmon < Formula
-  homepage 'http://people.suug.ch/~tgr/bmon'
-  url 'http://mirrors.kernel.org/debian/pool/main/b/bmon/bmon_2.0.1.orig.tar.gz'
-  mirror 'http://ftp.us.debian.org/debian/pool/main/b/bmon/bmon_2.0.1.orig.tar.gz'
-  sha1 'ef6297bbd7a5f9a351e14b2b3e9f45157b136a9c'
+  desc "Interface bandwidth monitor"
+  homepage "https://github.com/tgraf/bmon"
+  url "https://github.com/tgraf/bmon/releases/download/v3.8/bmon-3.8.tar.gz"
+  sha256 "da3e9f5f82f6e65bf08d912cc1e6ba450e488c543151f4b37791da03373054ff"
+
+  bottle do
+    sha256 "7215050b89d4cbf877365c7a66885ca80be97f94b0cace93dc51cc1b29c2108e" => :el_capitan
+    sha256 "576b5d70844675bcf7dfa15df9e7b69065e2c951dbb52e1b156215e8a8ddd93c" => :yosemite
+    sha256 "1f170230b89afb2a9761cb30283a7cfdc18468e6df7e4744fc882d60bb67852d" => :mavericks
+    sha256 "84e9754b63dd5133669d7194ceab9ae36b90f4af5e05f77a9f1ed9e744121802" => :mountain_lion
+  end
+
+  head do
+    url "https://github.com/tgraf/bmon.git"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+  end
+
+  depends_on "confuse" => :build
+  depends_on "pkg-config" => :build
 
   def install
+    system "./autogen.sh" if build.head?
     system "./configure", "--disable-debug",
                           "--prefix=#{prefix}",
                           "--mandir=#{man}"
-    system "make" # two steps to prevent blowing up
-    system "make install"
+    system "make", "install"
+  end
+
+  test do
+    system "#{bin}/bmon", "-o", "ascii:quitafter=1"
   end
 end

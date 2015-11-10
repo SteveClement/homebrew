@@ -1,19 +1,21 @@
-require 'formula'
-
 class Minisat < Formula
-  homepage 'http://minisat.se'
-  url 'https://github.com/niklasso/minisat/archive/releases/2.2.0.tar.gz'
-  sha1 '28c14eed485f4adb8dde9e26f05476f7eedc8f77'
+  desc "Boolean satisfiability (SAT) problem solver"
+  homepage "http://minisat.se"
+  url "https://github.com/niklasso/minisat/archive/releases/2.2.0.tar.gz"
+  sha256 "3ed44da999744c0a1be269df23c3ed8731cdb83c44a4f3aa29b3d6859bb2a4da"
 
-  # Fixes compilation on mac; in next upstream release. See:
+  # Fix some declaration errors; see:
   # http://groups.google.com/group/minisat/browse_thread/thread/f5b6a180cadbb214
   patch :DATA
 
+  fails_with :clang do
+    cause "error: friend declaration specifying a default argument must be a definition"
+  end
+
   def install
-    ENV['MROOT'] = Dir.pwd
-    Dir.chdir 'simp'
-    system "make", "r"
-    bin.install 'minisat_release' => 'minisat'
+    ENV["MROOT"] = buildpath
+    system "make", "-C", "simp", "r"
+    bin.install "simp/minisat_release" => "minisat"
   end
 end
 

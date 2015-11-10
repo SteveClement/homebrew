@@ -1,53 +1,51 @@
-require "formula"
-
 class Euca2ools < Formula
+  desc "Eucalyptus client API tools-works with Amazon EC2 and IAM"
   homepage "https://github.com/eucalyptus/euca2ools"
-  url "https://github.com/eucalyptus/euca2ools/archive/3.0.2.tar.gz"
-  sha1 "73e235e7e6b17c8d1fb064c14aa24a3de36640e7"
-  head "https://github.com/eucalyptus/euca2ools.git", :branch => "master"
+  url "https://github.com/eucalyptus/euca2ools/archive/v3.2.1.tar.gz"
+  sha256 "1d232d6c389b1fa1de9132abd04356bd3e28160e8410a0e5a41f5e0f3da4a125"
+  head "https://github.com/eucalyptus/euca2ools.git"
 
-  depends_on :python
+  bottle do
+    cellar :any
+    sha256 "8c7ef23097472b3b801d13abdfb4d416ea8156ea69915b5ab09051f7bbc1e4c8" => :yosemite
+    sha256 "fe63a3a7c44cd0f276962ff87e3f39d02ed667f09006f1357a30ce96616a0b34" => :mavericks
+    sha256 "fd09cae80f9a8648fc1a7048bd8eb3f2856c6df746baeae2ded8f33829eafb5b" => :mountain_lion
+  end
+
+  depends_on :python if MacOS.version <= :snow_leopard
 
   resource "requestbuilder" do
-    url "https://github.com/boto/requestbuilder/archive/0.1.0.tar.gz"
-    sha1 "9674b907d6a152b2daccfd5e63e11463be31a5ab"
+    url "https://github.com/boto/requestbuilder/archive/v0.3.4.tar.gz"
+    sha256 "f4fa8fab964b7ed94163d941c752e33dce3fd059f29618c9243808fd89a9aeb4"
   end
 
   resource "requests" do
-    url "https://pypi.python.org/packages/source/r/requests/requests-2.2.1.tar.gz"
-    sha1 "88eb1fd6a0dfb8b97262f8029978d7c75eebc16f"
+    url "https://pypi.python.org/packages/source/r/requests/requests-2.6.0.tar.gz"
+    sha256 "1cdbed1f0e236f35ef54e919982c7a338e4fea3786310933d3a7887a04b74d75"
   end
 
   resource "setuptools" do
-    url "https://pypi.python.org/packages/source/s/setuptools/setuptools-2.2.tar.gz"
-    sha1 "547eff11ea46613e8a9ba5b12a89c1010ecc4e51"
+    url "https://pypi.python.org/packages/source/s/setuptools/setuptools-15.0.tar.gz"
+    sha256 "718d13adf87f99a45835bb20e0a1c4c036de644cd32b3f112639403aa04ebeb5"
   end
 
   resource "six" do
-    url "https://pypi.python.org/packages/source/s/six/six-1.6.1.tar.gz"
-    sha1 "2a7941cc2233d9ad6d7d54dd5265d1eb9726c5a1"
+    url "https://pypi.python.org/packages/source/s/six/six-1.9.0.tar.gz"
+    sha256 "e24052411fc4fbd1f672635537c3fc2330d9481b18c0317695b46259512c91d5"
   end
 
   resource "lxml" do
-    url "https://pypi.python.org/packages/source/l/lxml/lxml-3.3.3.tar.gz"
-    sha1 "e701a4d8d7840fdf04944004dc0f38deff65214b"
+    url "https://pypi.python.org/packages/source/l/lxml/lxml-3.4.2.tar.gz"
+    sha256 "c7d5990298af6ffb00312973a25f0cc917a6368126dd40eaab41d78d3e1ea25d"
   end
 
   def install
+    ENV["PYTHONPATH"] = lib+"python2.7/site-packages"
     ENV.prepend_create_path "PYTHONPATH", libexec+"lib/python2.7/site-packages"
-    install_args = ["setup.py", "install", "--prefix=#{libexec}"]
 
-    # lxml's C bindings use flags unrecognized by clang,
-    # but since it doesn't use a makefile arg refurbishment
-    # is normally not enabled.
-    # See https://github.com/Homebrew/homebrew/issues/27639
-    ENV.append "HOMEBREW_CCCFG", "O"
-
-    resource("requestbuilder").stage { system "python", *install_args }
-    resource("requests").stage { system "python", *install_args }
-    resource("setuptools").stage { system "python", *install_args }
-    resource("lxml").stage { system "python", *install_args }
-    resource("six").stage { system "python", *install_args }
+    resources.each do |r|
+      r.stage { system "python", "setup.py", "install", "--prefix=#{libexec}" }
+    end
 
     system "python", "setup.py", "install", "--single-version-externally-managed", "--record=installed.txt",
            "--prefix=#{prefix}"
@@ -56,6 +54,7 @@ class Euca2ools < Formula
   end
 
   test do
+    system "#{bin}/euca-version"
     system "#{bin}/euca-describe-instances", "--help"
   end
 end

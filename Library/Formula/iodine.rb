@@ -1,17 +1,26 @@
-require 'formula'
-
 class Iodine < Formula
-  homepage 'http://code.kryo.se/iodine/'
-  url 'http://code.kryo.se/iodine/iodine-0.6.0-rc1.tar.gz'
-  sha1 '4fa9a248b8a84df8a727a5d749e669e58136edca'
+  desc "Tool for tunneling IPv4 data through a DNS server"
+  homepage "http://code.kryo.se/iodine/"
+  url "http://code.kryo.se/iodine/iodine-0.7.0.tar.gz"
+  mirror "https://mirrors.kernel.org/debian/pool/main/i/iodine/iodine_0.7.0.orig.tar.gz"
+  sha256 "ad2b40acf1421316ec15800dcde0f587ab31d7d6f891fa8b9967c4ded93c013e"
 
-  # 10.8 compatibility; see https://github.com/yarrick/iodine/pull/1
-  patch do
-    url "https://github.com/zschoche/iodine/commit/e1e438497a83dbe6800212a0e5cb632907d1b3d9.diff"
-    sha1 "b3581c211b772a83dc051bac4b3513e0f286279b"
+  head "https://github.com/yarrick/iodine.git"
+
+  bottle do
+    cellar :any
+    revision 1
+    sha256 "4bb3858d87351246c6786ddf1f3c09f9f266c83087b6f31755f2c1b610325718" => :mavericks
+    sha256 "371c3443aeebef21ec9ec072e2bcc472bd76d4909466744c66f67a9bbce5d41f" => :mountain_lion
   end
+
+  depends_on :tuntap
 
   def install
     system "make", "install", "prefix=#{prefix}"
+  end
+
+  test do
+    system "#{sbin}/iodine", "-v"
   end
 end

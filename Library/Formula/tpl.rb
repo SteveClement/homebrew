@@ -1,24 +1,20 @@
-require "formula"
-
 class Tpl < Formula
-  homepage "http://troydhanson.github.io/tpl/"
+  desc "Store and retrieve binary data in C"
+  homepage "https://troydhanson.github.io/tpl/"
   url "https://github.com/troydhanson/tpl/archive/v1.6.1.tar.gz"
-  sha1 "2ee92627e8f67400061d8fc606b601988ed90217"
+  sha256 "0b3750bf62f56be4c42f83c89d8449b24f1c5f1605a104801d70f2f3c06fb2ff"
   head "https://github.com/troydhanson/tpl.git"
 
-  option "with-tests", "Verify the build using the test suite."
-
-  depends_on :autoconf
-  depends_on :automake
-  depends_on :libtool
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
 
   def install
-    system "autoreconf", "-i"
-    system "./configure", "--disable-debug",
-                          "--disable-dependency-tracking",
+    system "autoreconf", "-fvi"
+    system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
                           "--prefix=#{prefix}"
     system "make", "install"
-    system "make", "-C", "tests" if build.with? "tests"
+    system "make", "-C", "tests"
   end
 end

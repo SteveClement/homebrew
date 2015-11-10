@@ -1,18 +1,17 @@
-require 'formula'
-
 class Fping < Formula
-  homepage 'http://fping.org/'
-  url 'http://fping.org/dist/fping-3.9.tar.gz'
-  sha1 '4bbd659abc800fde0333799b223c068b3bb303a7'
+  desc "Scriptable ping program for checking if multiple hosts are up"
+  homepage "http://fping.org/"
+  url "http://fping.org/dist/fping-3.10.tar.gz"
+  mirror "https://mirrors.kernel.org/debian/pool/main/f/fping/fping_3.10.orig.tar.gz"
+  sha256 "cd47e842f32fe6aa72369d8a0e3545f7c137bb019e66f47379dc70febad357d8"
 
-  head 'https://github.com/schweikert/fping.git'
+  head "https://github.com/schweikert/fping.git"
 
   def install
     system "./configure", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
                           "--sbindir=#{bin}",
                           "--enable-ipv6"
-    system "make install"
+    system "make", "install"
   end
-
 end

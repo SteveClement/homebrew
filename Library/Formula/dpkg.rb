@@ -1,26 +1,50 @@
-require 'formula'
-
 class Dpkg < Formula
-  homepage 'https://wiki.debian.org/Teams/Dpkg'
-  url 'http://ftp.debian.org/debian/pool/main/d/dpkg/dpkg_1.17.6.tar.xz'
-  sha1 '93d1d55fa82a9bcebfa4f7fdc50f1cb7d1d734e1'
+  desc "Debian package management system"
+  homepage "https://wiki.debian.org/Teams/Dpkg"
+  url "https://mirrors.ocf.berkeley.edu/debian/pool/main/d/dpkg/dpkg_1.18.3.tar.xz"
+  mirror "https://mirrorservice.org/sites/ftp.debian.org/debian/pool/main/d/dpkg/dpkg_1.18.3.tar.xz"
+  sha256 "a40ffe38d7f36d858a752189a306433cfc52c7d15d7b98f61d9f9dd49e0e4807"
 
-  depends_on 'pkg-config' => :build
-  depends_on 'gnu-tar'
+  bottle do
+    sha256 "a75ff82d4c12df36a0c14b3b0d0ffd3dd5a984141ee5148f83cfbb124e167e9f" => :el_capitan
+    sha256 "dfeb8b88f4802bffcdf5effa72602252bed2e9394c3e285b403beda9127ab024" => :yosemite
+    sha256 "03d0aa6f0c97835ca906134d0b0f555481e1fc3f03a6dfae88c27fb1c7451b54" => :mavericks
+  end
 
-  # Fixes the PERL_LIBDIR.
-  # Uses Homebrew-install gnu-tar instead of bsd tar.
-  patch :DATA
+  depends_on "pkg-config" => :build
+  depends_on "gnu-tar"
+  depends_on "xz" # For LZMA
 
   def install
+    # We need to specify a recent gnutar, otherwise various dpkg C programs will
+    # use the system "tar", which will fail because it lacks certain switches.
+    ENV["TAR"] = Formula["gnu-tar"].opt_bin/"gtar"
+
+    # Theoretically, we could reinsert a patch here submitted upstream previously
+    # but the check for PERL_LIB remains in place and incompatible with Homebrew.
+    # Using an env and scripting is a solution less likely to break over time.
+    # Both variables need to be set. One is compile-time, the other run-time.
+    ENV["PERL_LIBDIR"] = libexec/"lib/perl5"
+    ENV.prepend_create_path "PERL5LIB", libexec+"lib/perl5"
+
     system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}",
+                          "--disable-silent-rules",
+                          "--prefix=#{libexec}",
+                          "--sysconfdir=#{etc}",
+                          "--localstatedir=#{var}",
                           "--disable-dselect",
                           "--disable-linker-optimisations",
-                          "--disable-start-stop-daemon",
-                          "--disable-update-alternatives"
+                          "--disable-start-stop-daemon"
     system "make"
-    system "make install"
+    system "make", "install"
+
+    bin.install Dir["#{libexec}/bin/*"]
+    man.install Dir["#{libexec}/share/man/*"]
+    bin.env_script_all_files(libexec+"bin", :PERL5LIB => ENV["PERL5LIB"])
+
+    (buildpath/"dummy").write "Vendor: dummy\n"
+    (etc/"dpkg/origins").install "dummy"
+    (etc/"dpkg/origins").install_symlink "dummy" => "default"
   end
 
   def caveats; <<-EOS.undent
@@ -28,106 +52,27 @@ class Dpkg < Formula
     commands such as `dpkg -i`, `dpkg --configure` will fail.
     EOS
   end
+
+  test do
+    # Do not remove the empty line from the end of the control file
+    # All deb control files MUST end with an empty line
+    (testpath/"test/data/homebrew.txt").write <<-EOS.undent
+      Homebrew was here.
+    EOS
+
+    (testpath/"test/DEBIAN/control").write <<-EOS.undent
+      Package: test
+      Version: 1.40.99
+      Architecture: amd64
+      Description: I am a test
+      Maintainer: Dpkg Developers <test@test.org>
+
+    EOS
+    system bin/"dpkg", "-b", testpath/"test", "test.deb"
+    assert File.exist?("test.deb")
+
+    rm_rf "test"
+    system bin/"dpkg", "-x", "test.deb", testpath
+    assert File.exist?("data/homebrew.txt")
+  end
 end
-
-__END__
-diff --git a/configure b/configure
-index 5d91530..dd2ca11 100755
---- a/configure
-+++ b/configure
-@@ -8388,9 +8388,7 @@ if test "$PERL" = "no" || test ! -x "$PERL"; then
- fi
- # Let the user override the variable.
- if test -z "$PERL_LIBDIR"; then
--PERL_LIBDIR=$($PERL -MConfig -e 'my $r = $Config{vendorlibexp};
--                                 $r =~ s/$Config{vendorprefixexp}/\$(prefix)/;
--                                 print $r')
-+PERL_LIBDIR="$prefix/perl"
- fi
- 
- 
-diff --git a/lib/dpkg/dpkg.h b/lib/dpkg/dpkg.h
-index c0f633d..b692806 100644
---- a/lib/dpkg/dpkg.h
-+++ b/lib/dpkg/dpkg.h
-@@ -108,7 +108,7 @@ DPKG_BEGIN_DECLS
- #define DPKG		"dpkg"
- #define DEBSIGVERIFY	"/usr/bin/debsig-verify"
- 
--#define TAR		"tar"
-+#define TAR		"gtar"
- #define RM		"rm"
- #define CAT		"cat"
- #define FIND		"find"
-diff --git a/scripts/Makefile.am b/scripts/Makefile.am
-index f83adff..d2b5043 100644
---- a/scripts/Makefile.am
-+++ b/scripts/Makefile.am
-@@ -117,7 +117,7 @@ nobase_dist_perllib_DATA = \
- man3_MANS =
- 
- do_perl_subst = $(AM_V_GEN) \
--		sed -e "s:^\#![[:space:]]*/usr/bin/perl:\#!$(PERL):" \
-+		sed -e "s:^\#![[:space:]]*/usr/bin/perl:\#!$(PERL) -I$(PERL_LIBDIR):" \
- 		    -e "s:\$$CONFDIR[[:space:]]*=[[:space:]]*['\"][^'\"]*['\"]:\$$CONFDIR='$(pkgconfdir)':" \
- 		    -e "s:\$$ADMINDIR[[:space:]]*=[[:space:]]*['\"][^'\"]*['\"]:\$$ADMINDIR='$(admindir)':" \
- 		    -e "s:\$$LIBDIR[[:space:]]*=[[:space:]]*['\"][^'\"]*['\"]:\$$LIBDIR='$(pkglibdir)':" \
-diff --git a/scripts/Makefile.in b/scripts/Makefile.in
-index 754488e..8b233fb 100644
---- a/scripts/Makefile.in
-+++ b/scripts/Makefile.in
-@@ -486,7 +486,7 @@ nobase_dist_perllib_DATA = \
- # Keep it even if empty to have man3dir correctly set
- man3_MANS = 
- do_perl_subst = $(AM_V_GEN) \
--		sed -e "s:^\#![[:space:]]*/usr/bin/perl:\#!$(PERL):" \
-+		sed -e "s:^\#![[:space:]]*/usr/bin/perl:\#!$(PERL) -I$(PERL_LIBDIR):" \
- 		    -e "s:\$$CONFDIR[[:space:]]*=[[:space:]]*['\"][^'\"]*['\"]:\$$CONFDIR='$(pkgconfdir)':" \
- 		    -e "s:\$$ADMINDIR[[:space:]]*=[[:space:]]*['\"][^'\"]*['\"]:\$$ADMINDIR='$(admindir)':" \
- 		    -e "s:\$$LIBDIR[[:space:]]*=[[:space:]]*['\"][^'\"]*['\"]:\$$LIBDIR='$(pkglibdir)':" \
-
-diff --git a/scripts/Dpkg/Checksums.pm b/scripts/Dpkg/Checksums.pm
-index 4a64fd1..bb19f59 100644
---- a/scripts/Dpkg/Checksums.pm
-+++ b/scripts/Dpkg/Checksums.pm
-@@ -50,15 +50,15 @@ about supported checksums.
- 
- my $CHECKSUMS = {
-     md5 => {
--	program => [ 'md5sum' ],
-+	program => [ 'md5', '-q' ],
- 	regex => qr/[0-9a-f]{32}/,
-     },
-     sha1 => {
--	program => [ 'sha1sum' ],
-+	program => [ 'shasum', '-a', '1' ],
- 	regex => qr/[0-9a-f]{40}/,
-     },
-     sha256 => {
--	program => [ 'sha256sum' ],
-+	program => [ 'shasum', '-a', '256' ],
- 	regex => qr/[0-9a-f]{64}/,
-     },
- };
-diff --git a/scripts/Dpkg/Source/Archive.pm b/scripts/Dpkg/Source/Archive.pm
-index de30bf4..c97d421 100644
---- a/scripts/Dpkg/Source/Archive.pm
-+++ b/scripts/Dpkg/Source/Archive.pm
-@@ -47,7 +47,7 @@ sub create {
-     $spawn_opts{from_pipe} = \*$self->{tar_input};
-     # Call tar creation process
-     $spawn_opts{delete_env} = [ 'TAR_OPTIONS' ];
--    $spawn_opts{exec} = [ 'tar', '--null', '-T', '-', '--numeric-owner',
-+    $spawn_opts{exec} = [ 'gtar', '--null', '-T', '-', '--numeric-owner',
-                             '--owner', '0', '--group', '0',
-                             @{$opts{options}}, '-cf', '-' ];
-     *$self->{pid} = spawn(%spawn_opts);
-@@ -123,7 +123,7 @@ sub extract {
-
-     # Call tar extraction process
-     $spawn_opts{delete_env} = [ 'TAR_OPTIONS' ];
--    $spawn_opts{exec} = [ 'tar', '--no-same-owner', '--no-same-permissions',
-+    $spawn_opts{exec} = [ 'gtar', '--no-same-owner', '--no-same-permissions',
-                             @{$opts{options}}, '-xf', '-' ];
-     spawn(%spawn_opts);
-     $self->close();

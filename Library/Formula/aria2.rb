@@ -1,18 +1,17 @@
-require 'formula'
-
 class Aria2 < Formula
-  homepage 'http://aria2.sourceforge.net/'
-  url 'https://downloads.sourceforge.net/project/aria2/stable/aria2-1.18.5/aria2-1.18.5.tar.bz2'
-  sha1 '91639bf99a2e84873675f470fd36cee47f466770'
+  desc "Download with resuming and segmented downloading"
+  homepage "http://aria2.sourceforge.net/"
+  url "https://github.com/tatsuhiro-t/aria2/releases/download/release-1.19.2/aria2-1.19.2.tar.xz"
+  sha256 "3605486dd495cd8c2f672b7d0b763397989d831396862f15730697ebcf0ad53e"
 
   bottle do
-    cellar :any
-    sha1 "33d1d04188a0da054cc3e2393b667f5cc232d9aa" => :mavericks
-    sha1 "9606a416e16801fa2a4f857d00ebddcc3703e3d0" => :mountain_lion
-    sha1 "6d10be34b7a6d03302b7119d5aa93959cb204d87" => :lion
+    cellar :any_skip_relocation
+    sha256 "4f86ad9fe0a36da39d9b92bfd13328f4be449f3b2ee8481a3ae1aa4563b478f4" => :el_capitan
+    sha256 "150f486de66ff284ab7491e22d9cc1b4b841904052d65b20a0b36af9833d7b45" => :yosemite
+    sha256 "40ce69ef73400de2cb5c2005b98bec28d4bcb64241eef3dbb548cef53b5ae20c" => :mavericks
   end
 
-  depends_on 'pkg-config' => :build
+  depends_on "pkg-config" => :build
 
   needs :cxx11
 
@@ -28,15 +27,14 @@ class Aria2 < Formula
       --without-libgcrypt
     ]
 
-    # system zlib and sqlite don't include .pc files
-    ENV['ZLIB_CFLAGS'] = '-I/usr/include'
-    ENV['ZLIB_LIBS'] = '-L/usr/lib -lz'
-    ENV['SQLITE3_CFLAGS'] = '-I/usr/include'
-    ENV['SQLITE3_LIBS'] = '-L/usr/lib -lsqlite3'
-
     system "./configure", *args
-    system "make install"
+    system "make", "install"
 
     bash_completion.install "doc/bash_completion/aria2c"
+  end
+
+  test do
+    system "#{bin}/aria2c", "http://brew.sh"
+    assert File.exist? "index.html"
   end
 end

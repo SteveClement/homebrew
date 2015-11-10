@@ -1,27 +1,27 @@
-require 'formula'
-
 class AtSpi2Core < Formula
-  homepage 'http://a11y.org'
-  url 'http://ftp.gnome.org/pub/GNOME/sources/at-spi2-core/2.12/at-spi2-core-2.12.0.tar.xz'
-  sha256 'db550edd98e53b4252521459c2dcaf0f3b060a9bad52489b9dbadbaedad3fb89'
+  desc "Protocol definitions and daemon for D-Bus at-spi"
+  homepage "http://a11y.org"
+  url "https://download.gnome.org/sources/at-spi2-core/2.18/at-spi2-core-2.18.2.tar.xz"
+  sha256 "4eea5ba07912ad955157761c4c9fdb6e3fab6ea91899a4db785eb47ae61f1ee5"
 
   bottle do
-    sha1 "ddf80fbbe58a704dc6bab85472c73f28f343078f" => :mavericks
-    sha1 "ebc0bca7a9c5eebfdf57eb22b473a94d714dda09" => :mountain_lion
-    sha1 "5cfe5fae100a7787ff8d3a6199ff9d0fed61cc3f" => :lion
+    sha256 "d31b8efc3b5410f2d900bc8f1e58fb3818989bff3da3bf8ec74e0ad130314153" => :el_capitan
+    sha256 "6bbab5ca4b868057db64dc62e5fdb2299b2473781e5bfffe6768b88a4b22dd92" => :yosemite
+    sha256 "8a4ec3621c4a0c9a331790a6dce8f2f807f88c28550bb3768f81c0530a0516a7" => :mavericks
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'intltool' => :build
-  depends_on 'gettext'
-  depends_on 'glib'
-  depends_on 'd-bus'
+  depends_on "pkg-config" => :build
+  depends_on "intltool" => :build
+  depends_on "gettext"
+  depends_on "glib"
+  depends_on "d-bus"
   depends_on :x11
+  depends_on "gobject-introspection"
 
   def install
     system "./configure", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
-                          "--enable-introspection=no"
-    system "make install"
+                          "--enable-introspection=yes"
+    system "make", "install"
   end
 end

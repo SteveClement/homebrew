@@ -1,16 +1,12 @@
-require 'formula'
-
 class Ctemplate < Formula
-  homepage 'https://ctemplate.googlecode.com/'
-  url 'https://ctemplate.googlecode.com/files/ctemplate-2.2.tar.gz'
-  sha1 'b00a35291bc5c5bb8493a68bbf76d6a9cfa5c117'
-
-  head 'http://ctemplate.googlecode.com/svn/trunk/'
+  desc "Template language for C++"
+  homepage "https://github.com/olafvdspek/ctemplate"
+  url "https://github.com/OlafvdSpek/ctemplate/archive/ctemplate-2.3.tar.gz"
+  sha256 "99e5cb6d3f8407d5b1ffef96b1d59ce3981cda3492814e5ef820684ebb782556"
+  head "https://github.com/olafvdspek/ctemplate.git"
 
   def install
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
-
-    system "make install"
+    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
+    system "make", "install"
   end
 end

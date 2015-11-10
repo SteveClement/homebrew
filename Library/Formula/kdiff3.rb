@@ -1,11 +1,10 @@
-require 'formula'
-
 class Kdiff3 < Formula
-  homepage 'http://kdiff3.sourceforge.net/'
-  url 'https://downloads.sourceforge.net/project/kdiff3/kdiff3/0.9.97/kdiff3-0.9.97.tar.gz'
-  sha1 '1f2828c4b287b905bac64992b46a3e9231319547'
+  desc "Compare and merge 2 or 3 files or directories"
+  homepage "http://kdiff3.sourceforge.net/"
+  url "https://downloads.sourceforge.net/project/kdiff3/kdiff3/0.9.98/kdiff3-0.9.98.tar.gz"
+  sha256 "802c1ababa02b403a5dca15955c01592997116a24909745016931537210fd668"
 
-  depends_on 'qt'
+  depends_on "qt"
 
   def install
     # configure builds the binary

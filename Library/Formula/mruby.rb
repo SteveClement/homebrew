@@ -1,17 +1,16 @@
-require "formula"
-
 class Mruby < Formula
+  desc "Lightweight implementation of the Ruby language"
   homepage "http://www.mruby.org"
-  url "https://github.com/mruby/mruby/archive/1.0.0.tar.gz"
-  sha1 "6d4cb1b3594b1c609cc3e39d458d2ff27e4f9b4d"
+  url "https://github.com/mruby/mruby/archive/1.1.0.tar.gz"
+  sha256 "134422735eeb73e47985343e1146f40ffe50760319c6c052c5517daedc9281ac"
 
   head "https://github.com/mruby/mruby.git"
 
   bottle do
     cellar :any
-    sha1 "22bbdac4d6f903b24b1d79d64b311464fdd42161" => :mavericks
-    sha1 "5076d06d254730a052d88b4a9b4b2d1f630a0449" => :mountain_lion
-    sha1 "a88b7302f383dae1f9ca67a3fcbbd603841eec86" => :lion
+    sha1 "fc1d5229e1194203799bd2d59861d3a6919e04c9" => :yosemite
+    sha1 "3e5b89430eca272eff626c5bd45eb6845ba33bcc" => :mavericks
+    sha1 "4b3da67cad42fd5beba2ef64af5c58e3adc9ae7c" => :mountain_lion
   end
 
   depends_on "bison" => :build
@@ -21,8 +20,10 @@ class Mruby < Formula
 
     cd "build/host/" do
       lib.install Dir["lib/*.a"]
-      prefix.install %w{bin mrbgems mrblib tools}
+      prefix.install %w[bin mrbgems mrblib tools]
     end
+
+    prefix.install "include"
   end
 
   test do

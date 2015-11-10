@@ -1,20 +1,23 @@
-require 'formula'
-
 class Tika < Formula
-  homepage 'http://tika.apache.org/'
-  url 'http://www.apache.org/dyn/closer.cgi?path=tika/tika-app-1.5.jar'
-  sha1 '7f3657da1075bf95ac8faa2bafcba24228e6c714'
+  desc "Content analysis toolkit"
+  homepage "https://tika.apache.org/"
+  url "https://www.apache.org/dyn/closer.cgi?path=tika/tika-app-1.11.jar"
+  sha256 "76f23849c0fe116efda3d89f9021d74415727f6f98b2860c24247c299cae719c"
 
-  resource 'server' do
-    url 'http://repo1.maven.org/maven2/org/apache/tika/tika-server/1.5/tika-server-1.5.jar'
-    sha1 '4c0a659ca54d881ab187091169439cf0891a8154'
+  bottle :unneeded
+
+  depends_on :java => "1.7+"
+
+  resource "server" do
+    url "https://repo1.maven.org/maven2/org/apache/tika/tika-server/1.11/tika-server-1.11.jar"
+    sha256 "6eb6b932943d33860e533c3c8a4195f3b6376d3da07ff40e1aa299af5c705368"
   end
 
   def install
     libexec.install "tika-app-#{version}.jar"
     bin.write_jar_script libexec/"tika-app-#{version}.jar", "tika"
 
-    libexec.install resource('server')
+    libexec.install resource("server")
     bin.write_jar_script libexec/"tika-server-#{version}.jar", "tika-rest-server"
   end
 

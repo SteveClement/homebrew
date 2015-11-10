@@ -1,203 +1,106 @@
-require 'formula'
-
 class Ghc < Formula
-  homepage "http://haskell.org/ghc/"
-  url "http://www.haskell.org/ghc/dist/7.6.3/ghc-7.6.3-src.tar.bz2"
-  sha1 "8938e1ef08b37a4caa071fa169e79a3001d065ff"
+  desc "Glorious Glasgow Haskell Compilation System"
+  homepage "https://haskell.org/ghc/"
+  url "https://downloads.haskell.org/~ghc/7.10.2/ghc-7.10.2-src.tar.xz"
+  sha256 "54cd73755b784d78e2f13d5eb161bfa38d3efee9e8a56f7eb6cd9f2d6e2615f5"
 
   bottle do
-    revision 3
-    sha1 "80067b61d9179e771968318f7f5a3e4d2f1dddb2" => :mavericks
-    sha1 "1eded3fa413814a1647c291f0998305c72476471" => :mountain_lion
-    sha1 "51463f56a3a1420c6ee8ca91c0288e254b33f7f2" => :lion
+    revision 1
+    sha256 "1ce1a67a1bf09dabf97f105a536b1ab0a0b59b3bfd1e9cdd288aaae500bc79c3" => :el_capitan
+    sha256 "cc097abdfd1d392ffe6f8193627168279441fb868555823ac5aa75c41f2d9e74" => :yosemite
+    sha256 "3688f280ef8e85f1ff681ed03cf111a6cd28d58977fcdf7bed5a7ac2e61f7a01" => :mavericks
+    sha256 "b94cb5912e23a86a475a10114bf14da05fcbbb6b5b85584998f566fc64c01461" => :mountain_lion
   end
 
-  option "32-bit"
-  option "tests", "Verify the build using the testsuite."
+  option "with-tests", "Verify the build using the testsuite."
+  deprecated_option "tests" => "with-tests"
 
-  devel do
-    # This block should largely translate over for 7.8.1 when GM.
-    url "http://www.haskell.org/ghc/dist/7.8.1-rc2/ghc-7.8.0.20140228-src.tar.bz2"
-    sha1 "8bd8eb3410a7fccc322c0e23e8045fcb5793ea5a"
-
-    depends_on "gcc" if build.build_32_bit?
-    depends_on :macos => :mountain_lion
-
-    resource "binary" do
-      url "https://www.haskell.org/ghc/dist/7.8.1-rc2/ghc-7.8.0.20140228-x86_64-apple-darwin-lion.tar.bz2"
-      sha1 "0b5d9a25afc516682dcae62e9955552ce857e715"
-    end
-
-    resource "binary-32" do
-      url "http://www.haskell.org/ghc/dist/7.6.3/ghc-7.6.3-i386-apple-darwin.tar.bz2"
-      sha1 "6a312263fef41e06003f0676b879f2d2d5a1f30c"
-    end
-
-    resource "testsuite" do
-      url "http://www.haskell.org/ghc/dist/7.8.1-rc2/ghc-7.8.0.20140228-testsuite.tar.bz2"
-      sha1 "0c52e15c699b1c624fbc218b98ddfb44bc43cec8"
-    end
+  resource "gmp" do
+    url "http://ftpmirror.gnu.org/gmp/gmp-6.0.0a.tar.bz2"
+    mirror "https://gmplib.org/download/gmp/gmp-6.0.0a.tar.bz2"
+    mirror "https://ftp.gnu.org/gnu/gmp/gmp-6.0.0a.tar.bz2"
+    sha256 "7f8e9a804b9c6d07164cf754207be838ece1219425d64e28cfa3e70d5c759aaf"
   end
 
-  # These don't work inside of a `stable do` block
-  if build.stable?
-    env :std
-
+  if MacOS.version <= :lion
     fails_with :clang do
       cause <<-EOS.undent
-        Building with Clang configures GHC to use Clang as its preprocessor,
-        which causes subsequent GHC-based builds to fail.
+        Fails to bootstrap ghc-cabal. Error is:
+          libraries/Cabal/Cabal/Distribution/Compat/Binary/Class.hs:398:14:
+              The last statement in a 'do' block must be an expression
+                n <- get :: Get Int getMany n
       EOS
     end
   end
 
-  stable do
-    # http://hackage.haskell.org/trac/ghc/ticket/6009
-    depends_on :macos => :snow_leopard
-    depends_on "gcc" if MacOS.version >= :mountain_lion
-    depends_on "gmp"
-
-    resource "binary" do
-      url "http://www.haskell.org/ghc/dist/7.4.2/ghc-7.4.2-x86_64-apple-darwin.tar.bz2"
-      sha1 "7c655701672f4b223980c3a1068a59b9fbd08825"
+  resource "binary" do
+    if MacOS.version <= :lion
+      url "https://downloads.haskell.org/~ghc/7.6.3/ghc-7.6.3-x86_64-apple-darwin.tar.bz2"
+      sha256 "f7a35bea69b6cae798c5f603471a53b43c4cc5feeeeb71733815db6e0a280945"
+    else
+      url "https://downloads.haskell.org/~ghc/7.10.2/ghc-7.10.2-x86_64-apple-darwin.tar.xz"
+      sha256 "ef0f00885096e3621cec84a112dfae050cf546ad39bdef29a7719407c6bc5b36"
     end
+  end
 
-    resource "binary32" do
-      url "http://www.haskell.org/ghc/dist/7.4.2/ghc-7.4.2-i386-apple-darwin.tar.bz2"
-      sha1 "60f749893332d7c22bb4905004a67510992d8ef6"
-    end
-
-    resource "testsuite" do
-      url "https://github.com/ghc/testsuite/archive/ghc-7.6.3-release.tar.gz"
-      sha1 "6a1973ae3cccdb2f720606032ae84ffee8680ca1"
-    end
-
-    # Fixes 7.6.3 compilation on 10.9
-    patch :DATA if MacOS.version >= :mavericks
+  resource "testsuite" do
+    url "https://downloads.haskell.org/~ghc/7.10.2/ghc-7.10.2-testsuite.tar.xz"
+    sha256 "8b4885d376ca635935b49d4e36e2fa6f07164563ea496eac5fffa0ac926ae962"
   end
 
   def install
-    # Move the main tarball contents into a subdirectory
-    (buildpath+"Ghcsource").install Dir["*"]
+    # Build a static gmp rather than in-tree gmp, otherwise it links to brew's.
+    gmp = libexec/"integer-gmp"
 
-    if (Hardware.is_64_bit? and not build.build_32_bit?)
-      binary_resource = "binary"
-    else
-      binary_resource = "binary32"
-    end
+    # MPN_PATH: The lowest common denomenator asm paths that work on Darwin,
+    # corresponding to Yonah and Merom. Obviates --disable-assembly.
+    ENV["MPN_PATH"] = "x86_64/fastsse x86_64/core2 x86_64 generic" if build.bottle?
 
-    resource(binary_resource).stage do
-      # Define where the subformula will temporarily install itself
-      subprefix = buildpath+"subfo"
-
-      # ensure configure does not use Xcode 5 "gcc" which is actually clang
-      args = ["--prefix=#{subprefix}"]
-      args << "--with-gcc=#{ENV.cc}"
-
-      system "./configure", *args
-      if build.devel? and MacOS.version <= :lion
-        # __thread is not supported on Lion but configure enables it anyway.
-        File.open("mk/config.h", "a") do |file|
-          file.write("#undef CC_SUPPORTS_TLS")
-        end
-      end
-
-      # -j1 fixes an intermittent race condition
-      system "make", "-j1", "install"
-      ENV.prepend_path "PATH", subprefix/"bin"
-    end
-
-    cd "Ghcsource" do
-      # Fix an assertion when linking ghc with llvm-gcc
-      # https://github.com/Homebrew/homebrew/issues/13650
-      ENV["LD"] = "ld"
-
-      if Hardware.is_64_bit? and not build.build_32_bit?
-        arch = "x86_64"
-      else
-        ENV.m32 # Need to force this to fix build error on internal libgmp_ar.
-        arch = "i386"
-      end
-
-      # ensure configure does not use Xcode 5 "gcc" which is actually clang
-      args = ["--prefix=#{prefix}", "--build=#{arch}-apple-darwin"]
-      args << "--with-gcc=#{ENV.cc}"
-
-      system "./configure", *args
+    # GMP *does not* use PIC by default without shared libs  so --with-pic
+    # is mandatory or else you'll get "illegal text relocs" errors.
+    resource("gmp").stage do
+      system "./configure", "--prefix=#{gmp}", "--with-pic", "--disable-shared"
       system "make"
-
-      if build.include? "tests"
-        resource("testsuite").stage do
-          cd "testsuite" do
-            (buildpath+"Ghcsource/config").install Dir["config/*"]
-            (buildpath+"Ghcsource/driver").install Dir["driver/*"]
-            (buildpath+"Ghcsource/mk").install Dir["mk/*"]
-            (buildpath+"Ghcsource/tests").install Dir["tests/*"]
-            (buildpath+"Ghcsource/timeout").install Dir["timeout/*"]
-          end
-          cd (buildpath+"Ghcsource/tests") do
-            system "make", "CLEANUP=1", "THREADS=#{ENV.make_jobs}", "fast"
-          end
-        end
-      end
-
-      system "make"
-      # -j1 fixes an intermittent race condition
-      system "make", "-j1", "install"
+      system "make", "check"
+      ENV.deparallelize { system "make", "install" }
     end
-  end
 
-  def caveats; <<-EOS.undent
-    This brew is for GHC only; you might also be interested in haskell-platform.
-    EOS
+    args = ["--with-gmp-includes=#{gmp}/include",
+            "--with-gmp-libraries=#{gmp}/lib",
+            "--with-ld=ld", # Avoid hardcoding superenv's ld.
+            "--with-gcc=#{ENV.cc}"] # Always.
+
+    if ENV.compiler == :clang
+      args << "--with-clang=#{ENV.cc}"
+    elsif ENV.compiler == :llvm
+      args << "--with-gcc-4.2=#{ENV.cc}"
+    end
+
+    resource("binary").stage do
+      binary = buildpath/"binary"
+
+      system "./configure", "--prefix=#{binary}", *args
+      ENV.deparallelize { system "make", "install" }
+
+      ENV.prepend_path "PATH", binary/"bin"
+    end
+
+    system "./configure", "--prefix=#{prefix}", *args
+    system "make"
+
+    if build.with? "tests"
+      resource("testsuite").stage { buildpath.install Dir["*"] }
+      cd "testsuite" do
+        system "make", "clean"
+        system "make", "CLEANUP=1", "THREADS=#{ENV.make_jobs}", "fast"
+      end
+    end
+
+    ENV.deparallelize { system "make", "install" }
   end
 
   test do
-    hello = (testpath/"hello.hs")
-    hello.write('main = putStrLn "Hello Homebrew"')
-    output = `echo "main" | '#{bin}/ghci' #{hello}`
-    assert $?.success?
-    assert_match /Hello Homebrew/i, output
+    (testpath/"hello.hs").write('main = putStrLn "Hello Homebrew"')
+    system "runghc", testpath/"hello.hs"
   end
 end
-
-__END__
-diff --git a/includes/HsFFI.h b/includes/HsFFI.h
-index 652fbea..a21811e 100644
---- a/includes/HsFFI.h
-+++ b/includes/HsFFI.h
-@@ -21,7 +21,7 @@ extern "C" {
- #include "stg/Types.h"
-
- /* get limits for integral types */
--#ifdef HAVE_STDINT_H
-+#if defined HAVE_STDINT_H && !defined USE_INTTYPES_H_FOR_RTS_PROBES_D
- /* ISO C 99 says:
-  * "C++ implementations should define these macros only when
-  * __STDC_LIMIT_MACROS is defined before <stdint.h> is included."
-diff --git a/rts/RtsProbes.d b/rts/RtsProbes.d
-index 13f40f8..226f881 100644
---- a/rts/RtsProbes.d
-+++ b/rts/RtsProbes.d
-@@ -6,6 +6,12 @@
-  *
-  * ---------------------------------------------------------------------------*/
-
-+#ifdef __APPLE__ && __MACH__
-+# if MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9
-+#  define USE_INTTYPES_H_FOR_RTS_PROBES_D
-+# endif
-+#endif
-+
- #include "HsFFI.h"
- #include "rts/EventLogFormat.h"
-
-diff --git a/utils/mkdirhier/mkdirhier.sh b/utils/mkdirhier/mkdirhier.sh
-index 4c5d5f7..80762f4 100644
---- a/utils/mkdirhier/mkdirhier.sh
-+++ b/utils/mkdirhier/mkdirhier.sh
-@@ -1,4 +1,4 @@
- #!/bin/sh
-
--mkdir -p ${1+"$@"}
-+mkdir -p ${1+"./$@"}

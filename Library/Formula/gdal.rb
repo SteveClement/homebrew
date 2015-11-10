@@ -1,51 +1,58 @@
-require 'formula'
-
 class Gdal < Formula
-  homepage 'http://www.gdal.org/'
-  url 'http://download.osgeo.org/gdal/1.10.1/gdal-1.10.1.tar.gz'
-  sha1 'b4df76e2c0854625d2bedce70cc1eaf4205594ae'
-  revision 1
+  desc "GDAL: Geospatial Data Abstraction Library"
+  homepage "http://www.gdal.org/"
+  url "http://download.osgeo.org/gdal/1.11.3/gdal-1.11.3.tar.gz"
+  sha256 "561588bdfd9ca91919d4679a77a2b44214b158934ee8b425295ca5be33a1014d"
 
   bottle do
-    sha1 "01dee8d333f89ba82165c2eb72816bafc687a308" => :mavericks
-    sha1 "a57e4240a97c0f422c80d8e2b0e590ce6cb7ef62" => :mountain_lion
-    sha1 "f90ec187f9b1acf1a55227b6fd91a47904165ba1" => :lion
+    sha256 "25ead0938b01c438fa792e80375bf318b58487f573f6ed97d62e619767f116de" => :el_capitan
+    sha256 "88454a52db92eeff63c4bbcfb3fef2bef930b07d43a83d51d95528638d96abb9" => :yosemite
+    sha256 "37615b0b4bc16b498b9efdddd17c50e3f0f7dbc617d571decc75bf55184354ac" => :mavericks
   end
 
   head do
-    url 'https://svn.osgeo.org/gdal/trunk/gdal'
-    depends_on 'doxygen' => :build
+    url "https://svn.osgeo.org/gdal/trunk/gdal"
+    depends_on "doxygen" => :build
   end
 
-  option 'complete', 'Use additional Homebrew libraries to provide more drivers.'
-  option 'enable-opencl', 'Build with OpenCL acceleration.'
-  option 'enable-armadillo', 'Build with Armadillo accelerated TPS transforms.'
-  option 'enable-unsupported', "Allow configure to drag in any library it can find. Invoke this at your own risk."
-  option 'enable-mdb', 'Build with Access MDB driver (requires Java 1.6+ JDK/JRE, from Apple or Oracle).'
+  option "with-complete", "Use additional Homebrew libraries to provide more drivers."
+  option "with-opencl", "Build with OpenCL acceleration."
+  option "with-armadillo", "Build with Armadillo accelerated TPS transforms."
+  option "with-unsupported", "Allow configure to drag in any library it can find. Invoke this at your own risk."
+  option "with-mdb", "Build with Access MDB driver (requires Java 1.6+ JDK/JRE, from Apple or Oracle)."
+  option "with-libkml", "Build with Google's libkml driver (requires libkml --HEAD or >= 1.3)"
+  option "with-swig-java", "Build the swig java bindings"
 
-  depends_on :python => :recommended
-  if build.with? "python"
-    depends_on :fortran => :build
-  end
+  deprecated_option "enable-opencl" => "with-opencl"
+  deprecated_option "enable-armadillo" => "with-armadillo"
+  deprecated_option "enable-unsupported" => "with-unsupported"
+  deprecated_option "enable-mdb" => "with-mdb"
+  deprecated_option "complete" => "with-complete"
 
-  depends_on 'libpng'
-  depends_on 'jpeg'
-  depends_on 'giflib'
-  depends_on 'libtiff'
-  depends_on 'libgeotiff'
-  depends_on 'proj'
-  depends_on 'geos'
+  depends_on "libpng"
+  depends_on "jpeg"
+  depends_on "giflib"
+  depends_on "libtiff"
+  depends_on "libgeotiff"
+  depends_on "proj"
+  depends_on "geos"
 
-  depends_on 'sqlite' # To ensure compatibility with SpatiaLite.
-  depends_on 'freexl'
-  depends_on 'libspatialite'
+  depends_on "sqlite" # To ensure compatibility with SpatiaLite.
+  depends_on "freexl"
+  depends_on "libspatialite"
 
   depends_on "postgresql" => :optional
   depends_on "mysql" => :optional
 
-  depends_on 'homebrew/science/armadillo' if build.include? 'enable-armadillo'
+  depends_on "homebrew/science/armadillo" if build.with? "armadillo"
 
-  if build.include? 'complete'
+  if build.with? "libkml"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+
+  if build.with? "complete"
     # Raster libraries
     depends_on "homebrew/science/netcdf" # Also brings in HDF5
     depends_on "jasper"
@@ -53,6 +60,7 @@ class Gdal < Formula
     depends_on "cfitsio"
     depends_on "epsilon"
     depends_on "libdap"
+    depends_on "libxml2"
 
     # Vector libraries
     depends_on "unixodbc" # OS X version is not complete enough
@@ -61,29 +69,46 @@ class Gdal < Formula
     # Other libraries
     depends_on "xz" # get liblzma compression algorithm library from XZutils
     depends_on "poppler"
+    depends_on "podofo"
+    depends_on "json-c"
   end
 
-  # Prevent build failure on 10.6 / 10.7: http://trac.osgeo.org/gdal/ticket/5197
-  # Fix build against MySQL 5.6.x: http://trac.osgeo.org/gdal/ticket/5284
-  patch :DATA
+  depends_on :java => ["1.7+", :optional, :build]
 
-  stable do
-    # Patch of configure that finds Mac Java for MDB driver (uses Oracle or Mac default JDK)
-    # TODO: Remove when future GDAL release includes a fix
-    # http://trac.osgeo.org/gdal/ticket/5267  (patch applied to trunk, 2.0 release milestone)
-    # Must come before DATA
+  if build.with? "swig-java"
+    depends_on "ant" => :build
+    depends_on "swig" => :build
+  end
+
+  option "without-python", "Build without python2 support"
+  depends_on :python => :optional if MacOS.version <= :snow_leopard
+  depends_on :python3 => :optional
+  depends_on :fortran => :build if build.with?("python") || build.with?("python3")
+
+  # Extra linking libraries in configure test of armadillo may throw warning
+  # see: https://trac.osgeo.org/gdal/ticket/5455
+  # including prefix lib dir added by Homebrew:
+  # ld: warning: directory not found for option "-L/usr/local/Cellar/gdal/1.11.0/lib"
+  if build.with? "armadillo"
     patch do
-      url "https://gist.githubusercontent.com/dakcarto/6877854/raw/82ae81e558c0b6048336f0acb5d7577bd0a237d5/gdal-mdb-patch.diff"
-      sha1 "ea6c753df9e35abd90d7078f8a727eaab7f7d996"
-    end if build.include? "enable-mdb"
+      url "https://gist.githubusercontent.com/dakcarto/7abad108aa31a1e53fb4/raw/b56887208fd91d0434d5a901dae3806fb1bd32f8/gdal-armadillo.patch"
+      sha256 "e6880b9256abe2c289f4b1196792a626c689772390430c36976c0c5e0f339124"
+    end
   end
 
-  resource 'numpy' do
-    url 'http://downloads.sourceforge.net/project/numpy/NumPy/1.8.1/numpy-1.8.1.tar.gz'
-    sha1 '8fe1d5f36bab3f1669520b4c7d8ab59a21a984da'
+  resource "numpy" do
+    url "https://pypi.python.org/packages/source/n/numpy/numpy-1.9.3.tar.gz"
+    sha256 "c3b74d3b9da4ceb11f66abd21e117da8cf584b63a0efbd01a9b7e91b693fbbd6"
   end
 
-  def get_configure_args
+  resource "libkml" do
+    # Until 1.3 is stable, use master branch
+    url "https://github.com/google/libkml.git",
+        :revision => "9b50572641f671194e523ad21d0171ea6537426e"
+    version "1.3-dev"
+  end
+
+  def configure_args
     args = [
       # Base configuration.
       "--prefix=#{prefix}",
@@ -118,6 +143,7 @@ class Gdal < Formula
       "--with-spatialite=#{HOMEBREW_PREFIX}",
       "--with-geos=#{HOMEBREW_PREFIX}/bin/geos-config",
       "--with-static-proj4=#{HOMEBREW_PREFIX}",
+      "--with-libjson-c=#{Formula["json-c"].opt_prefix}",
 
       # GRASS backend explicitly disabled.  Creates a chicken-and-egg problem.
       # Should be installed separately after GRASS installation using the
@@ -138,14 +164,14 @@ class Gdal < Formula
       dods-root
       epsilon
       webp
-      poppler
+      podofo
     ]
-    if build.include? 'complete'
-      supported_backends.delete 'liblzma'
-      args << '--with-liblzma=yes'
-      args.concat supported_backends.map {|b| '--with-' + b + '=' + HOMEBREW_PREFIX}
+    if build.with? "complete"
+      supported_backends.delete "liblzma"
+      args << "--with-liblzma=yes"
+      args.concat supported_backends.map { |b| "--with-" + b + "=" + HOMEBREW_PREFIX }
     else
-      args.concat supported_backends.map {|b| '--without-' + b} unless build.include? 'enable-unsupported'
+      args.concat supported_backends.map { |b| "--without-" + b } if build.without? "unsupported"
     end
 
     # The following libraries are either proprietary, not available for public
@@ -170,28 +196,30 @@ class Gdal < Formula
       msg
       oci
       ingres
-      libkml
       dwgdirect
       idb
       sde
       podofo
       rasdaman
+      sosi
     ]
-    args.concat unsupported_backends.map {|b| '--without-' + b} unless build.include? 'enable-unsupported'
+    args.concat unsupported_backends.map { |b| "--without-" + b } if build.without? "unsupported"
 
     # Database support.
     args << (build.with?("postgresql") ? "--with-pg=#{HOMEBREW_PREFIX}/bin/pg_config" : "--without-pg")
     args << (build.with?("mysql") ? "--with-mysql=#{HOMEBREW_PREFIX}/bin/mysql_config" : "--without-mysql")
 
-    if build.include? 'enable-mdb'
+    if build.with? "mdb"
       args << "--with-java=yes"
       # The rpath is only embedded for Oracle (non-framework) installs
       args << "--with-jvm-lib-add-rpath=yes"
       args << "--with-mdb=yes"
     end
 
+    args << "--with-libkml=#{libexec}" if build.with? "libkml"
+
     # Python is installed manually to ensure everything is properly sandboxed.
-    args << '--without-python'
+    args << "--without-python"
 
     # Scripting APIs that have not been re-worked to respect Homebrew prefixes.
     #
@@ -205,18 +233,29 @@ class Gdal < Formula
     args << "--without-php"
     args << "--without-ruby"
 
-    args << (build.include?("enable-opencl") ? "--with-opencl" : "--without-opencl")
-    args << (build.include?("enable-armadillo") ? "--with-armadillo=yes" : "--with-armadillo=no")
+    args << (build.with?("opencl") ? "--with-opencl" : "--without-opencl")
+    args << (build.with?("armadillo") ? "--with-armadillo=#{Formula["armadillo"].opt_prefix}" : "--with-armadillo=no")
 
-    return args
+    args
   end
 
   def install
-    if build.with? 'python'
-      ENV.prepend_create_path 'PYTHONPATH', libexec+'lib/python2.7/site-packages'
-      numpy_args = [ "build", "--fcompiler=gnu95",
-                     "install", "--prefix=#{libexec}" ]
-      resource('numpy').stage { system "python", "setup.py", *numpy_args }
+    if build.with? "libkml"
+      resource("libkml").stage do
+        # See main `libkml` formula for info on patches
+        inreplace "configure.ac", "-Werror", ""
+        inreplace "third_party/Makefile.am" do |s|
+          s.sub! /(lib_LTLIBRARIES =) libminizip.la liburiparser.la/, "\\1"
+          s.sub! /(noinst_LTLIBRARIES = libgtest.la libgtest_main.la)/,
+                 "\\1 libminizip.la liburiparser.la"
+          s.sub! /(libminizip_la_LDFLAGS =)/, "\\1 -static"
+          s.sub! /(liburiparser_la_LDFLAGS =)/, "\\1 -static"
+        end
+
+        system "./autogen.sh"
+        system "./configure", "--prefix=#{libexec}"
+        system "make", "install"
+      end
     end
 
     # Linking flags for SQLite are not added at a critical moment when the GDAL
@@ -226,42 +265,57 @@ class Gdal < Formula
     #
     # Fortunately, this can be remedied using LDFLAGS.
     sqlite = Formula["sqlite"]
-    ENV.append 'LDFLAGS', "-L#{sqlite.opt_lib} -lsqlite3"
-    ENV.append 'CFLAGS', "-I#{sqlite.opt_include}"
-    # Needed by libdap
-    ENV.libxml2 if build.include? 'complete'
+    ENV.append "LDFLAGS", "-L#{sqlite.opt_lib} -lsqlite3"
+    ENV.append "CFLAGS", "-I#{sqlite.opt_include}"
 
     # Reset ARCHFLAGS to match how we build.
-    ENV['ARCHFLAGS'] = "-arch #{MacOS.preferred_arch}"
+    ENV["ARCHFLAGS"] = "-arch #{MacOS.preferred_arch}"
 
     # Fix hardcoded mandir: http://trac.osgeo.org/gdal/ticket/5092
-    inreplace 'configure', %r[^mandir='\$\{prefix\}/man'$], ''
+    inreplace "configure", %r[^mandir='\$\{prefix\}/man'$], ""
 
-    system "./configure", *get_configure_args
+    # These libs are statically linked in vendored libkml and libkml formula
+    inreplace "configure", " -lminizip -luriparser", "" if build.with? "libkml"
+
+    system "./configure", *configure_args
     system "make"
-    system "make install"
+    system "make", "install"
 
-    # `python-config` may try to talk us into building bindings for more
-    # architectures than we really should.
-    if MacOS.prefer_64_bit?
-      ENV.append_to_cflags "-arch #{Hardware::CPU.arch_64_bit}"
-    else
-      ENV.append_to_cflags "-arch #{Hardware::CPU.arch_32_bit}"
+    inreplace "swig/python/setup.cfg", /#(.*_dirs)/, "\\1"
+    Language::Python.each_python(build) do |python, python_version|
+      numpy_site_packages = buildpath/"homebrew-numpy/lib/python#{python_version}/site-packages"
+      numpy_site_packages.mkpath
+      ENV["PYTHONPATH"] = numpy_site_packages
+      resource("numpy").stage do
+        system python, *Language::Python.setup_install_args(buildpath/"homebrew-numpy")
+      end
+      cd "swig/python" do
+        system python, *Language::Python.setup_install_args(prefix)
+        bin.install Dir["scripts/*"] if python == "python"
+      end
     end
 
-    cd 'swig/python' do
-      system "python", "setup.py", "install", "--prefix=#{prefix}", "--record=installed.txt", "--single-version-externally-managed"
-      bin.install Dir['scripts/*']
+    if build.with? "swig-java"
+      cd "swig/java" do
+        inreplace "java.opt", "linux", "darwin"
+        inreplace "java.opt", "#JAVA_HOME = /usr/lib/jvm/java-6-openjdk/", "JAVA_HOME=$(shell echo $$JAVA_HOME)"
+        system "make"
+        system "make", "install"
+
+        # Install the jar that complements the native JNI bindings
+        system "ant"
+        lib.install "gdal.jar"
+      end
     end
 
-    system 'make', 'man' if build.head?
-    system 'make', 'install-man'
+    system "make", "man" if build.head?
+    system "make", "install-man"
     # Clean up any stray doxygen files.
-    Dir[bin + '*.dox'].each { |p| rm p }
+    Dir.glob("#{bin}/*.dox") { |p| rm p }
   end
 
   def caveats
-    if build.include? 'enable-mdb'
+    if build.with? "mdb"
       <<-EOS.undent
 
       To have a functional MDB driver, install supporting .jar files in:
@@ -271,168 +325,10 @@ class Gdal < Formula
       EOS
     end
   end
-end
 
-__END__
-diff --git a/GDALmake.opt.in b/GDALmake.opt.in
-index d7273aa..2fcbd53 100644
---- a/GDALmake.opt.in
-+++ b/GDALmake.opt.in
-@@ -123,6 +123,7 @@ INGRES_INC = @INGRES_INC@
- HAVE_MYSQL =	@HAVE_MYSQL@
- MYSQL_LIB  =	@MYSQL_LIB@
- MYSQL_INC  =	@MYSQL_INC@
-+MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION  =    @MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION@
- LIBS	   +=	$(MYSQL_LIB)
- 
- #
-diff --git a/configure b/configure
-index 1c4f8fb..120b17f 100755
---- a/configure
-+++ b/configure
-@@ -700,6 +700,7 @@ INGRES_INC
- INGRES_LIB
- II_SYSTEM
- HAVE_INGRES
-+MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION
- MYSQL_LIB
- MYSQL_INC
- HAVE_MYSQL
-@@ -23045,6 +23046,34 @@ $as_echo "no, mysql is pre-4.x" >&6; }
-       MYSQL_INC="`$MYSQL_CONFIG --include`"
-       { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
- $as_echo "yes" >&6; }
-+
-+      # Check if mysql headers declare load_defaults
-+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking load_defaults() in MySQL" >&5
-+$as_echo_n "checking load_defaults() in MySQL... " >&6; }
-+      rm -f testmysql.*
-+      echo '#include "my_global.h"' > testmysql.cpp
-+      echo '#include "my_sys.h"' >> testmysql.cpp
-+      echo 'int main(int argc, char** argv) { load_defaults(0, 0, 0, 0); return 0; } ' >> testmysql.cpp
-+      if test -z "`${CXX} ${CXXFLAGS} ${MYSQL_INC} -o testmysql testmysql.cpp ${MYSQL_LIB} 2>&1`" ; then
-+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, found in my_sys.h" >&5
-+$as_echo "yes, found in my_sys.h" >&6; }
-+      else
-+        echo 'extern "C" void load_defaults(const char *conf_file, const char **groups, int *argc, char ***argv);' > testmysql.cpp
-+        echo 'int main(int argc, char** argv) { load_defaults(0, 0, 0, 0); return 0; } ' >> testmysql.cpp
-+        if test -z "`${CXX} ${CXXFLAGS} ${MYSQL_INC} -o testmysql testmysql.cpp ${MYSQL_LIB} 2>&1`" ; then
-+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, found in library but not in header" >&5
-+$as_echo "yes, found in library but not in header" >&6; }
-+            MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION=yes
-+        else
-+            HAVE_MYSQL=no
-+            MYSQL_LIB=
-+            MYSQL_INC=
-+            as_fn_error $? "Cannot find load_defaults()" "$LINENO" 5
-+        fi
-+      fi
-+      rm -f testmysql.*
-+      rm -f testmysql
-+
- 	;;
-   esac
- fi
-@@ -23055,6 +23084,8 @@ MYSQL_INC=$MYSQL_INC
- 
- MYSQL_LIB=$MYSQL_LIB
- 
-+MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION=$MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION
-+
- 
- 
- 
-diff --git a/configure.in b/configure.in
-index 481e8ea..d83797f 100644
---- a/configure.in
-+++ b/configure.in
-@@ -2294,6 +2294,31 @@ else
-       MYSQL_LIB="`$MYSQL_CONFIG --libs`"
-       MYSQL_INC="`$MYSQL_CONFIG --include`"
-       AC_MSG_RESULT([yes])
-+
-+      # Check if mysql headers declare load_defaults
-+      AC_MSG_CHECKING([load_defaults() in MySQL])
-+      rm -f testmysql.*
-+      echo '#include "my_global.h"' > testmysql.cpp
-+      echo '#include "my_sys.h"' >> testmysql.cpp
-+      echo 'int main(int argc, char** argv) { load_defaults(0, 0, 0, 0); return 0; } ' >> testmysql.cpp
-+      if test -z "`${CXX} ${CXXFLAGS} ${MYSQL_INC} -o testmysql testmysql.cpp ${MYSQL_LIB} 2>&1`" ; then
-+        AC_MSG_RESULT([yes, found in my_sys.h])
-+      else
-+        echo 'extern "C" void load_defaults(const char *conf_file, const char **groups, int *argc, char ***argv);' > testmysql.cpp
-+        echo 'int main(int argc, char** argv) { load_defaults(0, 0, 0, 0); return 0; } ' >> testmysql.cpp
-+        if test -z "`${CXX} ${CXXFLAGS} ${MYSQL_INC} -o testmysql testmysql.cpp ${MYSQL_LIB} 2>&1`" ; then
-+            AC_MSG_RESULT([yes, found in library but not in header])
-+            MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION=yes
-+        else
-+            HAVE_MYSQL=no
-+            MYSQL_LIB=
-+            MYSQL_INC=
-+            AC_MSG_ERROR([Cannot find load_defaults()])
-+        fi
-+      fi
-+      rm -f testmysql.*
-+      rm -f testmysql
-+
- 	;;
-   esac
- fi
-@@ -2301,6 +2326,7 @@ fi
- AC_SUBST(HAVE_MYSQL,$HAVE_MYSQL)
- AC_SUBST(MYSQL_INC,$MYSQL_INC)
- AC_SUBST(MYSQL_LIB,$MYSQL_LIB)
-+AC_SUBST(MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION,$MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION)
- 
- dnl ---------------------------------------------------------------------------
- dnl INGRES support.
-diff --git a/ogr/ogrsf_frmts/mysql/GNUmakefile b/ogr/ogrsf_frmts/mysql/GNUmakefile
-index 292ae45..e78398d 100644
---- a/ogr/ogrsf_frmts/mysql/GNUmakefile
-+++ b/ogr/ogrsf_frmts/mysql/GNUmakefile
-@@ -7,6 +7,11 @@ OBJ	=	ogrmysqldriver.o ogrmysqldatasource.o \
- 
- CPPFLAGS	:=	-I.. -I../.. $(GDAL_INCLUDE) $(MYSQL_INC) $(CPPFLAGS)
- 
-+ifeq ($(MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION),yes)
-+CPPFLAGS +=   -DMYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION
-+endif
-+
-+
- default:	$(O_OBJ:.o=.$(OBJ_EXT))
- 
- clean:
-diff --git a/ogr/ogrsf_frmts/mysql/ogrmysqldatasource.cpp b/ogr/ogrsf_frmts/mysql/ogrmysqldatasource.cpp
-index 65c275b..447e374 100644
---- a/ogr/ogrsf_frmts/mysql/ogrmysqldatasource.cpp
-+++ b/ogr/ogrsf_frmts/mysql/ogrmysqldatasource.cpp
-@@ -36,6 +36,16 @@
- #include "cpl_conv.h"
- #include "cpl_string.h"
- 
-+/* Recent versions of mysql no longer declare load_defaults() in my_sys.h */
-+/* but they still have it in the lib. Very fragile... */
-+#ifdef MYSQL_NEEDS_LOAD_DEFAULTS_DECLARATION
-+extern "C" {
-+int load_defaults(const char *conf_file, const char **groups,
-+                  int *argc, char ***argv);
-+void free_defaults(char **argv);
-+}
-+#endif
-+
- CPL_CVSID("$Id: ogrmysqldatasource.cpp 24947 2012-09-22 09:54:23Z rouault $");
- /************************************************************************/
- /*                         OGRMySQLDataSource()                         */
-diff --git a/port/cpl_spawn.cpp b/port/cpl_spawn.cpp
-index d702594..69ea3c2 100644
---- a/port/cpl_spawn.cpp
-+++ b/port/cpl_spawn.cpp
-@@ -464,7 +464,7 @@ void CPLSpawnAsyncCloseErrorFileHandle(CPLSpawnedProcess* p)
-     #ifdef __APPLE__
-         #include <TargetConditionals.h>
-     #endif
--    #if defined(__APPLE__) && !defined(TARGET_OS_IPHONE)
-+    #if defined(__APPLE__) && (!defined(TARGET_OS_IPHONE) || TARGET_OS_IPHONE==0)
-         #include <crt_externs.h>
-         #define environ (*_NSGetEnviron())
-     #else
+  test do
+    # basic tests to see if third-party dylibs are loading OK
+    system "#{bin}/gdalinfo", "--formats"
+    system "#{bin}/ogrinfo", "--formats"
+  end
+end

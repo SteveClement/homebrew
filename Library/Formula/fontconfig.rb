@@ -1,25 +1,25 @@
-require 'formula'
-
 class Fontconfig < Formula
-  homepage 'http://fontconfig.org/'
-  url 'http://fontconfig.org/release/fontconfig-2.11.1.tar.bz2'
-  sha1 '08565feea5a4e6375f9d8a7435dac04e52620ff2'
+  desc "XML-based font configuration API for X Windows"
+  homepage "http://fontconfig.org/"
+  url "http://fontconfig.org/release/fontconfig-2.11.1.tar.bz2"
+  sha256 "dc62447533bca844463a3c3fd4083b57c90f18a70506e7a9f4936b5a1e516a99"
 
   # The bottle tooling is too lenient and thinks fontconfig
   # is relocatable, but it has hardcoded paths in the executables.
   bottle do
-    revision 2
-    sha1 "7f481637395b324e3f84ca098f9cf85d1ac9f5cb" => :mavericks
-    sha1 "1a5cea57cdd15d077e829fe93a2d794655249ba5" => :mountain_lion
-    sha1 "5bbe702fb724ea913579f0b22cc36da93f3c7687" => :lion
+    cellar :any
+    revision 4
+    sha256 "ebf34b370ba91f92df903e7b080135f3cc6e0492156002ee3fdd899128f60aa8" => :el_capitan
+    sha256 "5b27c11fd4dc7ccc4c37484775efa581f5c6cb3b447ea744a8d14573800ae516" => :yosemite
+    sha256 "bd0b9ce3d85d4767ac326d1ec58eb99825a6218e20d32ca20508f399867be700" => :mavericks
   end
 
   keg_only :provided_pre_mountain_lion
 
   option :universal
 
-  depends_on :freetype
-  depends_on 'pkg-config' => :build
+  depends_on "pkg-config" => :build
+  depends_on "freetype"
 
   # Reverts commit http://cgit.freedesktop.org/fontconfig/commit/?id=7a6622f25cdfab5ab775324bef1833b67109801b,
   # which breaks caching font directories containing subdirectories
@@ -31,6 +31,7 @@ class Fontconfig < Formula
     ENV.universal_binary if build.universal?
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",
+                          "--enable-static",
                           "--with-add-fonts=/System/Library/Fonts,/Library/Fonts,~/Library/Fonts",
                           "--prefix=#{prefix}",
                           "--localstatedir=#{var}",
@@ -40,6 +41,10 @@ class Fontconfig < Formula
 
   def post_install
     system "#{bin}/fc-cache", "-frv"
+  end
+
+  test do
+    system "#{bin}/fc-list"
   end
 end
 

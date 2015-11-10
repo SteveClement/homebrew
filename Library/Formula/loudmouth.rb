@@ -1,52 +1,33 @@
-require 'formula'
-
 class Loudmouth < Formula
-  homepage 'http://mcabber.com'
-  url 'http://mcabber.com/files/loudmouth-1.5.0-20121201.tar.bz2'
-  version '1.5.0.20121201'
-  sha1 '502963c3068f7033bb21d788918c1e5cd14f386e'
+  desc "Lightweight C library for the Jabber protocol"
+  homepage "https://mcabber.com"
+  url "https://mcabber.com/files/loudmouth/loudmouth-1.5.1.tar.bz2"
+  sha256 "ffb493b085c1d40176ecbe1c478f05932f265e0e5ba93444b87d3cd076267939"
 
-  option 'with-gnutls', "Use GnuTLS instead of the default OpenSSL"
+  bottle do
+    cellar :any
+    sha256 "932085ed7ada3a634f1d5a1b6ff31443f07ce45447d0dbeb374855f4b3bc476f" => :el_capitan
+    sha256 "4693898be18e03b7246e505430117ea6aece18b76dc0c4b494083aa4428dbbc8" => :yosemite
+    sha256 "1474fdc11929e10e2fe67d7a4722c3f4aa9b30ae29a25faaea53045cc4edb8b4" => :mavericks
+  end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'glib'
-  depends_on 'gnutls' => :optional
-  depends_on 'libidn'
+  head do
+    url "https://github.com/mcabber/loudmouth.git"
 
-  # Fix compilation on 10.9. Sent upstream:
-  # https://github.com/mcabber/loudmouth/pull/9
-  patch :DATA
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+
+  depends_on "pkg-config" => :build
+  depends_on "glib"
+  depends_on "libidn"
+  depends_on "gnutls"
 
   def install
-    args = ["--disable-debug",
-            "--disable-dependency-tracking",
-            "--prefix=#{prefix}"]
-    if build.with? 'gnutls'
-     args << "--with-ssl=gnutls"
-    else
-     args << "--with-ssl=openssl"
-    end
-    system "./configure", *args
-    system "make install"
+    system "./autogen.sh", "-n" if build.head?
+    system "./configure", "--disable-debug", "--disable-dependency-tracking",
+                          "--prefix=#{prefix}", "--with-ssl=gnutls"
+    system "make", "install"
   end
 end
-
-__END__
-diff --git a/loudmouth/lm-sock.c b/loudmouth/lm-sock.c
-index f3a2803..6e99eca 100644
---- a/loudmouth/lm-sock.c
-+++ b/loudmouth/lm-sock.c
-@@ -314,6 +314,13 @@ gboolean
- _lm_sock_set_keepalive (LmOldSocketT sock, int delay)
- {
- #ifdef USE_TCP_KEEPALIVES
-+
-+#ifdef __APPLE__
-+#ifndef TCP_KEEPIDLE
-+#define TCP_KEEPIDLE TCP_KEEPALIVE
-+#endif
-+#endif
-+
-     int opt;
- 
-     opt = 1;

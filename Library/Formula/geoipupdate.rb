@@ -1,26 +1,22 @@
-require 'formula'
-
 class Geoipupdate < Formula
-  homepage 'https://github.com/maxmind/geoipupdate'
+  desc "Automatic updates of GeoIP2 and GeoIP Legacy databases"
+  homepage "https://github.com/maxmind/geoipupdate"
+  url "https://github.com/maxmind/geoipupdate/releases/download/v2.2.1/geoipupdate-2.2.1.tar.gz"
+  sha256 "9547c42cc8620b2c3040fd8df95e8ee45c8b6ebcca7737d641f9526104d5f446"
 
-  stable do
-    url "https://github.com/maxmind/geoipupdate/releases/download/v2.0.0/geoipupdate-2.0.0.tar.gz"
-    sha1 "d3c90ad9c9ad5974e8a5a30c504e7827978ddea7"
-
-    # Fixes use of getline on pre-Lion; will be in next release
-    patch do
-      url "https://github.com/maxmind/geoipupdate/commit/bdf11969f4c7c6b173466092287a2fdbd485b248.diff"
-      sha1 "80a8dd08ccbcd1c1d73c1bff6b5ce62adc254b96"
-    end
+  bottle do
+    sha256 "a3313c0df356e2fbc6eea2a46862c34efb88206931d2452ca45b1bba471a284b" => :el_capitan
+    sha256 "bf6ff091c8e3ad9529d0cbd39f7380e1cd2379137684b508c8e70799a0e1feb2" => :yosemite
+    sha256 "175eaccb4fad21fcd9bb64f9fc1997d450c8c66b4146544d27180b57e2eaace8" => :mavericks
+    sha256 "d24c71e19f810f252619df4a183da690e8b0fb97943adcae5b35405b11595c43" => :mountain_lion
   end
 
-  head 'https://github.com/maxmind/geoipupdate.git'
-
-  # Because the patch requires regenerating the configure script;
-  # move these back to the head spec on next release
-  depends_on 'autoconf' => :build
-  depends_on 'automake' => :build
-  depends_on 'libtool' => :build
+  head do
+    url "https://github.com/maxmind/geoipupdate.git"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
 
   option :universal
 
@@ -29,11 +25,11 @@ class Geoipupdate < Formula
 
     # Download free databases by default
     # See https://github.com/maxmind/geoip-api-c#150
-    inreplace 'conf/GeoIP.conf.default', 'YOUR_USER_ID_HERE', '999999'
-    inreplace 'conf/GeoIP.conf.default', 'YOUR_LICENSE_KEY_HERE', '000000000000'
-    inreplace 'conf/GeoIP.conf.default', /^ProductIds .*$/, 'ProductIds 506 533'
+    inreplace "conf/GeoIP.conf.default", "YOUR_USER_ID_HERE", "999999"
+    inreplace "conf/GeoIP.conf.default", "YOUR_LICENSE_KEY_HERE", "000000000000"
+    inreplace "conf/GeoIP.conf.default", /^ProductIds .*$/, "ProductIds 506 533 GeoLite2-City GeoLite2-Country"
 
-    system "./bootstrap"
+    system "./bootstrap" if build.head?
 
     system "./configure", "--disable-dependency-tracking",
                           "--disable-silent-rules",

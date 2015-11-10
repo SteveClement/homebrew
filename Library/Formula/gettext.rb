@@ -1,18 +1,17 @@
-require 'formula'
-
 class Gettext < Formula
-  homepage 'http://www.gnu.org/software/gettext/'
-  url 'http://ftpmirror.gnu.org/gettext/gettext-0.18.3.2.tar.gz'
-  mirror 'http://ftp.gnu.org/gnu/gettext/gettext-0.18.3.2.tar.gz'
-  sha256 'd1a4e452d60eb407ab0305976529a45c18124bd518d976971ac6dc7aa8b4c5d7'
+  desc "GNU internationalization (i18n) and localization (l10n) library"
+  homepage "https://www.gnu.org/software/gettext/"
+  url "http://ftpmirror.gnu.org/gettext/gettext-0.19.6.tar.xz"
+  mirror "https://ftp.gnu.org/gnu/gettext/gettext-0.19.6.tar.xz"
+  sha256 "9b95816620fd1168cb4eeca0e9dc0ffd86e864fc668f76f5e37cc054d6982e51"
 
   bottle do
-    sha1 "b051e525a42aa11242dc80afd19aa914d38b1e4b" => :mavericks
-    sha1 "a1e9a0835d6f2ac2134ac3583e40ac3e4315c5d0" => :mountain_lion
-    sha1 "674f284e9fb6be58df47b788a84eaa5a0c64d195" => :lion
+    sha256 "8df50085d6a552958805922ce4b25ec2d57e6f0799b4a5549778bce2b1ba0b49" => :el_capitan
+    sha256 "b28fcdcc79bfd01f3750ef564064feac7b4f8d7d19ed1b92176684293c5016a9" => :yosemite
+    sha256 "cc788fa52512f86ee271cdba9591aef6ff3905f5343b3b970359f15d16461043" => :mavericks
   end
 
-  keg_only "OS X provides the BSD gettext library and some software gets confused if both are in the library path."
+  keg_only :shadowed_by_osx, "OS X provides the BSD gettext library and some software gets confused if both are in the library path."
 
   option :universal
 
@@ -21,6 +20,7 @@ class Gettext < Formula
     ENV.universal_binary if build.universal?
 
     system "./configure", "--disable-dependency-tracking",
+                          "--disable-silent-rules",
                           "--disable-debug",
                           "--prefix=#{prefix}",
                           "--with-included-gettext",
@@ -28,13 +28,19 @@ class Gettext < Formula
                           "--with-included-libcroco",
                           "--with-included-libunistring",
                           "--with-emacs",
+                          "--with-lispdir=#{share}/emacs/site-lisp/gettext",
                           "--disable-java",
                           "--disable-csharp",
                           # Don't use VCS systems to create these archives
                           "--without-git",
-                          "--without-cvs"
+                          "--without-cvs",
+                          "--without-xz"
     system "make"
     ENV.deparallelize # install doesn't support multiple make jobs
-    system "make install"
+    system "make", "install"
+  end
+
+  test do
+    system "#{bin}/gettext", "test"
   end
 end

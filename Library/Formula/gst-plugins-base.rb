@@ -1,38 +1,38 @@
-require 'formula'
-
 class GstPluginsBase < Formula
-  homepage 'http://gstreamer.freedesktop.org/'
-  url 'http://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-base-1.2.4.tar.xz'
-  mirror 'http://ftp.osuosl.org/pub/blfs/svn/g/gst-plugins-base-1.2.4.tar.xz'
-  sha256 '4d6273dc3f5a94bcc53ccfe0711cfddd49e31371d1136bf62fa1ecc604fc6550'
+  desc "GStreamer plugins (well-supported, basic set)"
+  homepage "http://gstreamer.freedesktop.org/"
+  url "https://download.gnome.org/sources/gst-plugins-base/1.6/gst-plugins-base-1.6.1.tar.xz"
+  sha256 "9533dcfaa4ee32d435483d9fa88c06b1eba6e9bb234aacd7583f207199f44ba3"
+
+  bottle do
+    sha256 "a8b0cf88b5d999bf0f920a2136576da1a8ae2574a50ed6c0755c008b8bdd5ad9" => :el_capitan
+    sha256 "a2161b82a858c0ec0a1d7a0ea14c41664e507053a756e6874450d557a6142d15" => :yosemite
+    sha256 "3be63e57479cf37569e17f31106ce0b98dd347b377bc8f7dd80286785c8bde0e" => :mavericks
+  end
 
   head do
-    url 'git://anongit.freedesktop.org/gstreamer/gst-plugins-base'
+    url "git://anongit.freedesktop.org/gstreamer/gst-plugins-base"
 
-    depends_on :autoconf
-    depends_on :automake
-    depends_on :libtool
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'gettext'
-  if build.with? 'gobject-introspection'
-    depends_on 'gstreamer' => 'with-gobject-introspection'
-  else
-    depends_on 'gstreamer'
-  end
+  depends_on "pkg-config" => :build
+  depends_on "gettext"
+  depends_on "gstreamer"
+
   # The set of optional dependencies is based on the intersection of
   # gst-plugins-base-0.10.35/REQUIREMENTS and Homebrew formulae
-  depends_on 'gobject-introspection' => :optional
-  depends_on 'orc' => :optional
-  depends_on 'gtk+' => :optional
-  depends_on 'libogg' => :optional
-  depends_on 'pango' => :optional
-  depends_on 'theora' => :optional
-  depends_on 'libvorbis' => :optional
+  depends_on "gobject-introspection"
+  depends_on "orc" => :optional
+  depends_on "gtk+" => :optional
+  depends_on "libogg" => :optional
+  depends_on "pango" => :optional
+  depends_on "theora" => :optional
+  depends_on "libvorbis" => :optional
 
   def install
-
     # gnome-vfs turned off due to lack of formula for it.
     args = %W[
       --prefix=#{prefix}
@@ -46,10 +46,11 @@ class GstPluginsBase < Formula
       --disable-xshm
       --disable-debug
       --disable-dependency-tracking
+      --enable-introspection=yes
     ]
 
     if build.head?
-      ENV.append "NOCONFIGURE", "yes"
+      ENV["NOCONFIGURE"] = "yes"
       system "./autogen.sh"
     end
 

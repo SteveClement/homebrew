@@ -1,11 +1,10 @@
-require 'formula'
-
 class Fdclone < Formula
-  homepage 'http://hp.vector.co.jp/authors/VA012337/soft/fd/'
-  url 'http://hp.vector.co.jp/authors/VA012337/soft/fd/FD-3.01a.tar.gz'
-  sha1 '5d4f90ccaee67fadcc5d776f90bbe2fd760c4cdd'
+  desc "Console-based file manager"
+  homepage "http://hp.vector.co.jp/authors/VA012337/soft/fd/"
+  url "http://hp.vector.co.jp/authors/VA012337/soft/fd/FD-3.01b.tar.gz"
+  sha256 "d66d902cac9d4f64a91d42ceb487a138d544c9fd9cb2961730889cc8830303d4"
 
-  depends_on 'nkf' => :build
+  depends_on "nkf" => :build
 
   patch :DATA
 
@@ -14,7 +13,7 @@ class Fdclone < Formula
     system "make", "PREFIX=#{prefix}", "all"
     system "make", "MANTOP=#{man}", "install"
 
-    %w(README FAQ HISTORY LICENSES TECHKNOW ToAdmin).each do |file|
+    %w[README FAQ HISTORY LICENSES TECHKNOW ToAdmin].each do |file|
       system "nkf", "-w", "--overwrite", file
       prefix.install "#{file}.eng" => file
       prefix.install file => "#{file}.ja"
@@ -48,7 +47,7 @@ diff --git a/custom.c b/custom.c
 index d7a995f..45b96c6 100644
 --- a/custom.c
 +++ b/custom.c
-@@ -561,7 +561,7 @@ static CONST envtable envlist[] = {
+@@ -566,7 +566,7 @@ static CONST envtable envlist[] = {
  	{"FD_URLKCODE", &urlkcode, DEFVAL(NOCNV), URLKC_E, T_KNAM},
  #endif
  #if	!defined (_NOENGMES) && !defined (_NOJPNMES)
@@ -57,7 +56,7 @@ index d7a995f..45b96c6 100644
  #endif
  #ifdef	DEP_FILECONV
  	{"FD_SJISPATH", &sjispath, DEFVAL(SJISPATH), SJSP_E, T_KPATHS},
-@@ -857,7 +857,9 @@ int no;
+@@ -862,7 +862,9 @@ int no;
  #if	defined (DEP_KCONV) || (!defined (_NOENGMES) && !defined (_NOJPNMES))
  		case T_MESLANG:
  # ifndef	_NOCATALOG

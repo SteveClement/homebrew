@@ -1,14 +1,19 @@
-require 'formula'
-
 class Storm < Formula
-  homepage 'https://storm.incubator.apache.org'
-  url 'http://mirror.csclub.uwaterloo.ca/apache/incubator/storm/apache-storm-0.9.1-incubating/apache-storm-0.9.1-incubating.zip'
-  version '0.9.1'
-  sha1 '75f28e07fae2d21e427ba998b93069ef7dd3e184'
-  head 'https://github.com/apache/incubator-storm.git'
+  desc "Distributed realtime computation system to process data streams"
+  homepage "https://storm.apache.org"
+  url "https://www.apache.org/dyn/closer.cgi?path=storm/apache-storm-0.9.5/apache-storm-0.9.5.tar.gz"
+  sha256 "2e8337126de8d1e180abe77fb81af7c971f8c4b2dad94e446ac86c0f02ba3fb2"
+
+  bottle :unneeded
+
+  conflicts_with "stormssh", :because => "both install 'storm' binary"
 
   def install
-    libexec.install Dir['*']
+    libexec.install Dir["*"]
     bin.install_symlink libexec/"bin/storm"
+  end
+
+  test do
+    system bin/"storm", "version"
   end
 end

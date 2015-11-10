@@ -1,26 +1,25 @@
-require 'formula'
-
 class Libcaca < Formula
-  homepage 'http://caca.zoy.org/wiki/libcaca'
-  url 'http://caca.zoy.org/files/libcaca/libcaca-0.99.beta18.tar.gz'
-  version '0.99b18'
-  sha1 '0cbf8075c01d59b53c3cdfec7df9818696a41128'
+  desc "Convert pixel information into colored ASCII art"
+  homepage "http://caca.zoy.org/wiki/libcaca"
+  url "https://fossies.org/linux/privat/libcaca-0.99.beta19.tar.gz"
+  version "0.99b19"
+  sha256 "128b467c4ed03264c187405172a4e83049342cc8cc2f655f53a2d0ee9d3772f4"
 
-  option 'with-imlib2', 'Build with Imlib2 support'
-
-  depends_on :x11 if build.with? "imlib2"
-
-  if build.with? "imlib2"
-    depends_on 'pkg-config' => :build
-    depends_on 'imlib2' => :optional
+  bottle do
+    cellar :any
+    revision 1
+    sha256 "ba475a145203197f637059f20dfcb5d8cfb34615ce30bfe342fbe7887ebcad41" => :el_capitan
+    sha1 "d377e78210582b24626f9f2d7bbb1d1442c1131d" => :yosemite
+    sha1 "5dd773ce055c6cb9a754c3d691c30c05bf7dbc18" => :mavericks
   end
+
+  depends_on "pkg-config" => :build
+  depends_on "imlib2" => :optional
+  depends_on :x11 if build.with? "imlib2"
 
   fails_with :llvm do
     cause "Unsupported inline asm: input constraint with a matching output constraint of incompatible type"
   end
-
-  # Make libcaca build with clang; see http://caca.zoy.org/ticket/90
-  patch :DATA
 
   def install
     # Some people can't compile when Java is enabled. See:
@@ -31,7 +30,7 @@ class Libcaca < Formula
 
     # Fix --destdir issue.
     #   ../.auto/py-compile: Missing argument to --destdir.
-    inreplace 'python/Makefile.in', '$(am__py_compile) --destdir "$(DESTDIR)"', "$(am__py_compile) --destdir \"$(cacadir)\""
+    inreplace "python/Makefile.in", '$(am__py_compile) --destdir "$(DESTDIR)"', "$(am__py_compile) --destdir \"$(cacadir)\""
 
     args = ["--disable-dependency-tracking",
             "--prefix=#{prefix}",
@@ -47,23 +46,10 @@ class Libcaca < Formula
     system "./configure", *args
     system "make"
     ENV.j1 # Or install can fail making the same folder at the same time
-    system "make install"
+    system "make", "install"
   end
 
   test do
     system "#{bin}/img2txt", "--version"
   end
 end
-
-__END__
---- a/caca/caca.h 2011-07-05 00:09:51.000000000 -0700
-+++ b/caca/caca.h 2011-07-05 00:10:10.000000000 -0700
-@@ -645,7 +645,7 @@ typedef struct cucul_buffer cucul_buffer
- #       define CACA_DEPRECATED
- #   endif
-
--#   if defined __GNUC__ && __GNUC__ > 3
-+#   if !defined __APPLE__ && defined __GNUC__ && __GNUC__ > 3
- #       define CACA_ALIAS(x) __attribute__ ((weak, alias(#x)))
- #   else
- #       define CACA_ALIAS(x)

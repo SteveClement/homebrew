@@ -1,40 +1,46 @@
-require 'formula'
-
 class RakudoStar < Formula
-  homepage 'http://rakudo.org/'
-  url 'http://rakudo.org/downloads/star/rakudo-star-2014.03.tar.gz'
-  sha256 '6b285fb3fbbfa22f5986a2890cd0ca29de8efb3a60b2d60e948140c24320a994'
+  desc "Perl 6 compiler"
+  homepage "http://rakudo.org/"
+  url "http://rakudo.org/downloads/star/rakudo-star-2015.09.tar.gz"
+  sha256 "99b0332c4a05d444876efff58714104fc3cbf5f875174c1e410bedca03a6880d"
 
   bottle do
-    sha1 "8713766c33d97f16eba1764e3a89137d58fa4ee3" => :mavericks
-    sha1 "cd24cf9b2b76949f3bba68f404ee8574da524639" => :mountain_lion
-    sha1 "ad7b50e1e85f2552f89f1e5fbdf2741659b8763b" => :lion
+    sha256 "b845f58e8f3fdeb79314d416519dd4162a32e035744f428350e2bc14821a2ece" => :el_capitan
+    sha256 "97e0e5670dfaf1d4c475634708c002cd2d2568d455ee9c02422dc78f8ea36c03" => :yosemite
+    sha256 "c57d83c71966970ed6d7630a6a80f07532be75b80b264abc165bb00030442d7e" => :mavericks
   end
 
-  option 'with-jvm', 'Build also for jvm as an alternate backend.'
+  option "with-jvm", "Build also for jvm as an alternate backend."
 
-  conflicts_with 'parrot'
+  conflicts_with "parrot"
 
-  depends_on 'gmp' => :optional
-  depends_on 'icu4c' => :optional
-  depends_on 'pcre' => :optional
-  depends_on 'libffi'
+  depends_on "gmp" => :optional
+  depends_on "icu4c" => :optional
+  depends_on "pcre" => :optional
+  depends_on "libffi"
 
   def install
     libffi = Formula["libffi"]
-    ENV.remove 'CPPFLAGS', "-I#{libffi.include}"
-    ENV.prepend 'CPPFLAGS', "-I#{libffi.lib}/libffi-#{libffi.version}/include"
+    ENV.remove "CPPFLAGS", "-I#{libffi.include}"
+    ENV.prepend "CPPFLAGS", "-I#{libffi.lib}/libffi-#{libffi.version}/include"
 
     ENV.j1  # An intermittent race condition causes random build failures.
-    if build.with? "jvm"
-      system "perl", "Configure.pl", "--prefix=#{prefix}", "--backends=parrot,jvm", "--gen-parrot"
-    else
-      system "perl", "Configure.pl", "--prefix=#{prefix}", "--backends=parrot", "--gen-parrot"
-    end
+
+    backends = ["moar"]
+    generate = ["--gen-moar"]
+
+    backends << "jvm" if build.with? "jvm"
+
+    system "perl", "Configure.pl", "--prefix=#{prefix}", "--backends=" + backends.join(","), *generate
     system "make"
-    system "make install"
-    # move the man pages out of the top level into share.
-    mv "#{prefix}/man", share
+    system "make", "install"
+
+    # Move the man pages out of the top level into share.
+    # Not all backends seem to generate man pages at this point (moar does not, parrot does),
+    # so we need to check if the directory exists first.
+    if File.directory?("#{prefix}/man")
+      mv "#{prefix}/man", share
+    end
   end
 
   test do

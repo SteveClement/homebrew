@@ -1,17 +1,16 @@
-require 'formula'
-
 class Clojurescript < Formula
-  homepage 'https://github.com/clojure/clojurescript'
-  head 'https://github.com/clojure/clojurescript.git'
-  url 'https://github.com/clojure/clojurescript/archive/r2202.tar.gz'
-  sha1 'a205d9a21a16e8052995485c30925b6828d1259a'
+  desc "Clojure to JS compiler"
+  homepage "https://github.com/clojure/clojurescript"
+  url "https://github.com/clojure/clojurescript/releases/download/r1.7.145/cljs.jar"
+  version "1.7.145"
+  sha256 "67e33f4e68459d4772f912a658230df5b3d78996d072b34bb9080c337da7bcbb"
+  head "https://github.com/clojure/clojurescript.git"
+
+  bottle :unneeded
 
   def install
-    system "./script/bootstrap"
-    inreplace %w(bin/cljsc script/repl script/repljs script/browser-repl),
-      "#!/bin/sh", "#!/bin/sh\nCLOJURESCRIPT_HOME=#{libexec}"
-    libexec.install Dir['*']
-    bin.write_exec_script libexec/'bin/cljsc'
+    libexec.install "cljs.jar"
+    bin.write_jar_script libexec/"cljs.jar", "cljsc"
   end
 
   def caveats; <<-EOS.undent
@@ -21,6 +20,12 @@ class Clojurescript < Formula
   end
 
   test do
-    system "#{bin}/cljsc"
+    (testpath/"t.cljs").write <<-EOF.undent
+    (ns hello)
+    (defn ^:export greet [n]
+      (str "Hello " n))
+    EOF
+
+    system "#{bin}/cljsc", testpath/"t.cljs"
   end
 end

@@ -1,38 +1,59 @@
-require 'formula'
-
 class Groonga < Formula
-  homepage 'http://groonga.org/'
-  url 'http://packages.groonga.org/source/groonga/groonga-4.0.1.tar.gz'
-  sha1 '96859d352cb6439f8dbe8e5fb55373f796a4a11e'
+  desc "Fulltext search engine and column store"
+  homepage "http://groonga.org/"
+  url "http://packages.groonga.org/source/groonga/groonga-5.0.9.tar.gz"
+  sha256 "4fb59009dca154ffb53f9b408dc296e6e215f8eda613a8ef184fa634e702d35d"
 
   bottle do
-    sha1 "e39684c9c88a738496ebbcb0ba2e33c21d922043" => :mavericks
-    sha1 "7692109f8b2ca457c1ae2a6d7314c24d05cda339" => :mountain_lion
-    sha1 "a28d4c0d7de6a8590b8c3a6c1ff0def06485fe84" => :lion
+    sha256 "69bc0854ee969cd7627f1d7856b5cde5b429b106a298e1673989c83cc1ff3db8" => :el_capitan
+    sha256 "a8eab8472f4d58c807441c94f0c2c904241ee918cbb0223defbe743bc1f322e3" => :yosemite
+    sha256 "089a97b55ad3733005d3ae5a7f8a9501dfefb0620c1e484e9021ee2bfb438424" => :mavericks
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'pcre'
-  depends_on 'msgpack'
+  head do
+    url "https://github.com/groonga/groonga.git"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
+  end
+
+  option "with-benchmark", "With benchmark program for developer use"
+
+  deprecated_option "enable-benchmark" => "with-benchmark"
+
+  depends_on "pkg-config" => :build
+  depends_on "pcre"
+  depends_on "msgpack"
   depends_on "mecab" => :optional
+  depends_on "lz4" => :optional
+  depends_on "openssl"
   depends_on "mecab-ipadic" if build.with? "mecab"
-
-  depends_on 'glib' if build.include? 'enable-benchmark'
-
-  option 'enable-benchmark', "Enable benchmark program for developer use"
+  depends_on "glib" if build.with? "benchmark"
 
   def install
     args = %W[
       --prefix=#{prefix}
       --with-zlib
       --disable-zeromq
+      --enable-mruby
+      --without-libstemmer
     ]
 
-    args << "--enable-benchmark" if build.include? "enable-benchmark"
+    args << "--enable-benchmark" if build.with? "benchmark"
     args << "--with-mecab" if build.with? "mecab"
+    args << "--with-lz4" if build.with? "lz4"
 
+    if build.head?
+      args << "--with-ruby"
+      system "./autogen.sh"
+    end
     # ZeroMQ is an optional dependency that will be auto-detected unless we disable it
     system "./configure", *args
-    system "make install"
+    system "make", "install"
+  end
+
+  test do
+    output = shell_output("groonga --version")
+    assert_match /groonga #{version}/, output
   end
 end

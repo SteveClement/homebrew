@@ -1,27 +1,26 @@
-require 'formula'
-
 class OpusTools < Formula
-  homepage 'http://www.opus-codec.org'
-  url 'http://downloads.xiph.org/releases/opus/opus-tools-0.1.8.tar.gz'
-  sha1 '71e3cf393399af0231d86434923093ca79eea8ab'
+  desc "Utilities to encode, inspect, and decode .opus files"
+  homepage "https://www.opus-codec.org"
+  url "http://downloads.xiph.org/releases/opus/opus-tools-0.1.9.tar.gz"
+  sha256 "b1873dd78c7fbc98cf65d6e10cfddb5c2c03b3af93f922139a2104baedb4643a"
 
   head do
-    url 'https://git.xiph.org/opus-tools.git'
+    url "https://git.xiph.org/opus-tools.git"
 
-    depends_on :autoconf
-    depends_on :automake
-    depends_on :libtool
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+    depends_on "libtool" => :build
   end
 
-  depends_on 'pkg-config' => :build
-  depends_on 'opus'
-  depends_on 'flac'
-  depends_on 'libogg'
+  depends_on "pkg-config" => :build
+  depends_on "opus"
+  depends_on "flac"
+  depends_on "libogg"
 
   def install
     system "./autogen.sh" if build.head?
     system "./configure", "--disable-dependency-tracking",
                           "--prefix=#{prefix}"
-    system "make install"
+    system "make", "install"
   end
 end

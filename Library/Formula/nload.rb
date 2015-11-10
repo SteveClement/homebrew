@@ -1,16 +1,15 @@
-require 'formula'
-
 class Nload < Formula
-  homepage 'http://www.roland-riegel.de/nload/'
-  url 'http://www.roland-riegel.de/nload/nload-0.7.4.tar.gz'
-  sha1 'bb0a168c93c588ad4fd5e3a653b3620b79ada1e8'
+  desc "Realtime console network usage monitor"
+  homepage "http://www.roland-riegel.de/nload/"
+  url "http://www.roland-riegel.de/nload/nload-0.7.4.tar.gz"
+  sha256 "c1c051e7155e26243d569be5d99c744d8620e65fa8a7e05efcf84d01d9d469e5"
 
   fails_with :llvm do
     build 2334
   end
 
-  depends_on :autoconf
-  depends_on :automake
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
 
   # Patching configure.in file to make configure compile on Mac OS.
   # Patch taken from MacPorts.
@@ -18,9 +17,11 @@ class Nload < Formula
 
   def install
     system "./run_autotools"
-    system "./configure", "--disable-debug", "--disable-dependency-tracking",
+    system "./configure", "--disable-debug",
+                          "--disable-dependency-tracking",
                           "--prefix=#{prefix}"
-    system "make install"
+    # Unset LDFLAGS, "-s" causes the linker to crash
+    system "make", "install", "LDFLAGS="
   end
 end
 

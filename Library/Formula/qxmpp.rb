@@ -1,15 +1,14 @@
-require 'formula'
-
 class Qxmpp < Formula
-  homepage 'https://code.google.com/p/qxmpp/'
-  url 'https://qxmpp.googlecode.com/files/qxmpp-0.7.6.tar.gz'
-  sha1 'a87b4b5c94d1f4dc723cbbb7799cf4067c7e5ea2'
+  desc "Cross-platform C++ XMPP client and server library"
+  homepage "https://github.com/qxmpp-project/qxmpp/"
+  url "https://github.com/qxmpp-project/qxmpp/archive/v0.8.0.tar.gz"
+  sha256 "00aa821ab9e18d33ad15f12ae80aca8c3d9180e40d419ae34a90bfab91a78b02"
 
-  depends_on 'qt'
+  depends_on "qt"
 
   def install
     system "qmake", "-config", "release", "PREFIX=#{prefix}"
     system "make"
-    system "make install"
+    system "make", "install"
   end
 end

@@ -1,14 +1,22 @@
-require 'formula'
-
 class Nzbget < Formula
-  homepage 'http://sourceforge.net/projects/nzbget/'
-  url 'https://downloads.sourceforge.net/project/nzbget/nzbget-stable/12.0/nzbget-12.0.tar.gz'
-  sha1 'b7f3037ca664f09c28ab359cf6091d876d63ba5f'
+  desc "Binary newsgrabber for nzb files"
+  homepage "http://nzbget.net/"
+  url "https://github.com/nzbget/nzbget/releases/download/v16.0/nzbget-16.0-src.tar.gz"
+  sha256 "95bf4d1b888c631da06ef2699219c855a8d5433a3907791aee0d075c413ccdd0"
 
-  head 'https://nzbget.svn.sourceforge.net/svnroot/nzbget/trunk'
+  head "https://github.com/nzbget/nzbget.git"
 
-  depends_on 'pkg-config' => :build
-  depends_on 'libsigc++'
+  bottle do
+    cellar :any
+    sha256 "beed81c6b0c08725384b27285a13672b1c264228f025028ce81b9c6cf0c710b9" => :el_capitan
+    sha256 "b8f8f1cf8c569dc0b7cb7ed186b506dae589468e7631afa0fc9e0ba1f12064ec" => :yosemite
+    sha256 "d67d69333f76517db3b121d1926543c3d6d2bf538f12738fd8757cb2c01fcbf1" => :mavericks
+  end
+
+  depends_on "pkg-config" => :build
+  depends_on "openssl"
+
+  needs :cxx11
 
   fails_with :clang do
     build 500
@@ -18,36 +26,51 @@ class Nzbget < Formula
       EOS
   end
 
-  resource "libpar2" do
-    url "https://downloads.sourceforge.net/project/parchive/libpar2/0.2/libpar2-0.2.tar.gz"
-    sha1 "4b3da928ea6097a8299aadafa703fc6d59bdfb4b"
-  end
-
-  # Bugfixes and ability to cancel par2 repair
-  resource "libpar2_patch" do
-    url "https://gist.githubusercontent.com/Smenus/4576230/raw/e722f2113195ee9b8ee67c1c424aa3f2085b1066/libpar2-0.2-nzbget.patch"
-    sha1 "0dca03f42c0997fd6b537a7dc539d705afb76157"
-  end
-
   def install
-    resource("libpar2").stage do
-      buildpath.install resource("libpar2_patch")
-      system "patch -p1 < #{buildpath}/libpar2-0.2-nzbget.patch"
+    ENV.cxx11
 
-      system "./configure", "--disable-debug", "--disable-dependency-tracking",
-                            "--prefix=#{libexec}/lp2"
-      system "make install"
-    end
-
-    # Tell configure where libpar2 is, and tell it to use OpenSSL
+    # Tell configure to use OpenSSL
     system "./configure", "--disable-debug", "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
-                          "--with-libpar2-includes=#{libexec}/lp2/include",
-                          "--with-libpar2-libraries=#{libexec}/lp2/lib",
                           "--with-tlslib=OpenSSL"
     system "make"
     ENV.j1
-    system "make install"
-    system "make install-conf"
+    system "make", "install"
+    pkgshare.install_symlink "nzbget.conf" => "webui/nzbget.conf"
+    etc.install "nzbget.conf"
+  end
+
+  plist_options :manual => "nzbget"
+
+  def plist; <<-EOS.undent
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>Label</key>
+      <string>#{plist_name}</string>
+      <key>ProgramArguments</key>
+      <array>
+        <string>#{opt_bin}/nzbget</string>
+        <string>-s</string>
+        <string>-o</string>
+        <string>OutputMode=Log</string>
+      </array>
+      <key>RunAtLoad</key>
+      <true/>
+      <key>KeepAlive</key>
+      <true/>
+    </dict>
+    </plist>
+    EOS
+  end
+
+  test do
+    # Start nzbget as a server in daemon-mode
+    system "#{bin}/nzbget", "-D"
+    # Query server for version information
+    system "#{bin}/nzbget", "-V"
+    # Shutdown server daemon
+    system "#{bin}/nzbget", "-Q"
   end
 end

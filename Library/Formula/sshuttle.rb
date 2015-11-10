@@ -1,17 +1,17 @@
-require 'formula'
-
 class Sshuttle < Formula
-  homepage 'https://github.com/apenwarr/sshuttle'
-  url 'https://github.com/apenwarr/sshuttle/archive/sshuttle-0.61.tar.gz'
-  sha1 '05551cdc78e866d983470ba4084beb206bacebd8'
+  desc "Proxy server that works as a poor man's VPN"
+  homepage "https://github.com/sshuttle/sshuttle"
+  url "https://github.com/sshuttle/sshuttle/archive/sshuttle-0.72.tar.gz"
+  sha256 "3ea217fa98e3887b0fb2229eb65b9548a4beea1947ed5949501e5ceec360ba19"
+  head "https://github.com/sshuttle/sshuttle.git"
 
-  head 'https://github.com/apenwarr/sshuttle.git'
+  bottle :unneeded
 
   def install
     # Building the docs requires installing
     # markdown & BeautifulSoup Python modules
     # so we don't.
-    libexec.install Dir['*']
-    bin.write_exec_script libexec/'sshuttle'
+    libexec.install Dir["*"]
+    bin.write_exec_script libexec/"src/sshuttle"
   end
 end

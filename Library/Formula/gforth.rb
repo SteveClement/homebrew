@@ -1,30 +1,18 @@
-require 'formula'
-
 class Gforth < Formula
-  homepage 'http://bernd-paysan.de/gforth.html'
-  url 'http://www.complang.tuwien.ac.at/forth/gforth/gforth-0.7.2.tar.gz'
-  sha256 '77db9071c2442da3215da361b71190bccb153f81f4d01e5e8bc2c2cf8ee81b48'
+  desc "Implementation of the ANS Forth language"
+  homepage "https://www.gnu.org/software/gforth/"
+  url "https://www.complang.tuwien.ac.at/forth/gforth/gforth-0.7.3.tar.gz"
+  sha256 "2f62f2233bf022c23d01c920b1556aa13eab168e3236b13352ac5e9f18542bb0"
 
-  depends_on 'libtool' => :run
-  depends_on 'libffi'
-  depends_on 'pcre'
-
-  def darwin_major_version
-    # kern.osrelease: 11.4.2
-    full_version = `/usr/sbin/sysctl -n kern.osrelease`
-    full_version.split("\.")[0]
-  end
+  depends_on "libtool" => :run
+  depends_on "libffi"
+  depends_on "pcre"
 
   def install
+    cp Dir["#{Formula["libtool"].opt_share}/libtool/*/config.{guess,sub}"], buildpath
     ENV.deparallelize
-    args = %W[--prefix=#{prefix}]
-
-    if MacOS.prefer_64_bit?
-      args << "--build=x86_64-apple-darwin#{darwin_major_version}"
-    end
-
-    system "./configure", *args
+    system "./configure", "--prefix=#{prefix}"
     system "make" # Separate build steps.
-    system "make install"
+    system "make", "install"
   end
 end

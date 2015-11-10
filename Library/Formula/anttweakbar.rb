@@ -1,19 +1,26 @@
-require 'formula'
-
 class Anttweakbar < Formula
-  homepage 'http://www.antisphere.com/Wiki/tools:anttweakbar'
-  url 'https://downloads.sourceforge.net/project/anttweakbar/AntTweakBar_116.zip'
-  version '1.16'
-  sha1 '5743321df3b074f9a82b5ef3e6b54830a715b938'
+  desc "C/C++ library for adding GUIs to OpenGL apps"
+  homepage "http://www.antisphere.com/Wiki/tools:anttweakbar"
+  url "https://downloads.sourceforge.net/project/anttweakbar/AntTweakBar_116.zip"
+  version "1.16"
+  sha256 "fbceb719c13ceb13b9fd973840c2c950527b6e026f9a7a80968c14f76fcf6e7c"
+
+  bottle do
+    cellar :any
+    sha1 "103b4c69883ace7c1d24a8ea9405669f491a00bc" => :yosemite
+    sha1 "52b1d49b36d290e5f90897b3fb291c52c936007b" => :mavericks
+    sha1 "370619e705719ed57ba0b31447c1f33a3b014c77" => :mountain_lion
+  end
 
   # See
   # http://sourceforge.net/p/anttweakbar/code/ci/5a076d13f143175a6bda3c668e29a33406479339/tree/src/LoadOGLCore.h?diff=5528b167ed12395a60949d7c643262b6668f15d5&diformat=regular
+  # https://sourceforge.net/p/anttweakbar/tickets/14/
   patch :DATA
 
   def install
     system "make", "-C", "src", "-f", "Makefile.osx"
-    lib.install 'lib/libAntTweakBar.dylib'
-    include.install 'include/AntTweakBar.h'
+    lib.install "lib/libAntTweakBar.dylib", "lib/libAntTweakBar.a"
+    include.install "include/AntTweakBar.h"
   end
 end
 
@@ -50,3 +57,16 @@ index 8aaab1e..b606d2b 100644
  ANT_GL_CORE_DECL(void, glUseProgram, (GLuint program))
  ANT_GL_CORE_DECL(void, glUniform1f, (GLint location, GLfloat v0))
  ANT_GL_CORE_DECL(void, glUniform2f, (GLint location, GLfloat v0, GLfloat v1))
+diff --git a/src/LoadOGLCore.cpp b/src/LoadOGLCore.cpp
+index 2daa573..b8b9151 100644
+--- a/src/LoadOGLCore.cpp
++++ b/src/LoadOGLCore.cpp
+@@ -484,7 +484,7 @@ namespace GLCore { PFNGLGetProcAddress _glGetProcAddress = NULL; }
+         void *proc=NULL;
+         if (gl_dyld == NULL)
+         {
+-            gl_dyld = dlopen("OpenGL",RTLD_LAZY);
++            gl_dyld = dlopen("/System/Library/Frameworks/OpenGL.framework/OpenGL",RTLD_LAZY);
+         }
+         if (gl_dyld)
+         {

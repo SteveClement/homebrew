@@ -1,14 +1,15 @@
-require "formula"
-
 class AndroidPlatformTools < Formula
-  homepage "http://developer.android.com/sdk"
+  desc "Tools for the Android SDK"
+  homepage "https://developer.android.com/sdk"
   # the url is from:
-  # http://dl-ssl.google.com/android/repository/repository-8.xml
-  url "http://dl-ssl.google.com/android/repository/platform-tools_r19.0.1-macosx.zip"
-  version '19.0.1'
-  sha1 "340a497e4199d076ea93d4ee0e7a50858344d176"
+  # https://dl.google.com/android/repository/repository-10.xml
+  url "https://dl.google.com/android/repository/platform-tools_r23.0.1-macosx.zip"
+  version "23.0.1"
+  sha256 "d2439f5de236c3831c048b678653c5955487351be8e196c65923b4eca5c47692"
 
-  conflicts_with 'android-sdk',
+  bottle :unneeded
+
+  conflicts_with "android-sdk",
     :because => "the Android Platform-tools are part of the Android SDK"
 
   def install

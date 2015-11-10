@@ -1,29 +1,39 @@
-require 'formula'
-
 class Sassc < Formula
-  homepage 'https://github.com/hcatlin/sassc'
-  url 'https://github.com/hcatlin/sassc/archive/v1.0.1.tar.gz'
-  sha1 '69e7d97264b252593a3307330a96a5ccdc2813b5'
+  desc "Wrapper around libsass that helps to create command-line apps"
+  homepage "https://github.com/sass/sassc"
+  url "https://github.com/sass/sassc.git", :tag => "3.2.5", :revision => "5d43e94f43f305dd6cc3381463976832b9ef6d98"
+  head "https://github.com/sass/sassc.git"
 
-  depends_on :autoconf
-  depends_on :automake
-  depends_on :libtool
-  depends_on 'libsass'
+  bottle do
+    cellar :any
+    sha256 "44d23e1c74824b8f2f3f399411f3806f82f8405d6dbaf2fb4f028d8f064280b4" => :el_capitan
+    sha256 "ddeb5ad5fb637692cf56527a0b2e695c70875891294702cfe4f822faf89987f6" => :yosemite
+    sha256 "0675d030c8b99ce8a19e834fcc02e5ddfb0c0cfe9340c96778a16ee074563279" => :mavericks
+  end
+
+  depends_on "autoconf" => :build
+  depends_on "automake" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
+  depends_on "libsass"
 
   def install
-    system "autoreconf -i"
-    system "./configure", "--prefix=#{prefix}"
-    system "make install"
+    system "autoreconf", "-fvi"
+    system "./configure", "--prefix=#{prefix}", "--disable-silent-rules",
+                          "--disable-dependency-tracking"
+    system "make", "install"
   end
 
   test do
-    (testpath/"test.sass").write "a { color:blue; &:hover { color:red; } }"
-    expected = <<-EOS.undent
-      a {
-        color: blue; }
-        a:hover {
-          color: red; }
+    (testpath/"input.scss").write <<-EOS.undent
+      div {
+        img {
+          border: 0px;
+        }
+      }
     EOS
-    assert_equal expected, `#{bin}/sassc test.sass`
+
+    assert_equal "div img{border:0px}",
+    shell_output("#{bin}/sassc --style compressed input.scss").strip
   end
 end

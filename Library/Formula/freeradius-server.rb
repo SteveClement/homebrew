@@ -1,41 +1,43 @@
-require 'formula'
-
 class FreeradiusServer < Formula
-  homepage 'http://freeradius.org/'
-  url 'ftp://ftp.freeradius.org/pub/freeradius/freeradius-server-2.2.2.tar.gz'
-  sha1 '6aaa14169c20f257dcd5dcc61da0d0f985e9b5cc'
+  desc "High-performance and highly configurable RADIUS server"
+  homepage "http://freeradius.org/"
+  url "ftp://ftp.freeradius.org/pub/freeradius/freeradius-server-3.0.9.tar.bz2"
+  mirror "http://ftp.cc.uoc.gr/mirrors/ftp.freeradius.org/freeradius-server-3.0.9.tar.bz2"
+  sha256 "030d9bfe5ef42d0fd4be94a1fe03a60af9dff35b7ee89e50b0a73ff78606f7e9"
 
-  # Requires newer autotools on all platforms
-  depends_on 'autoconf' => :build
-  depends_on 'automake' => :build
-  depends_on 'libtool' => :build
+  bottle do
+    sha256 "2a7bd5d5c1f586759be42d466ea4b4f8eb4d6302080b3419b06f3f264e507b0f" => :yosemite
+    sha256 "321acc149270fba2040f3d248b0de7aceb07efc1abfe0a89cb44063886c9a135" => :mavericks
+    sha256 "d27bcb30a5d4ad39ab29b0faf2462163a2a177300817af8c324bab2c44593f65" => :mountain_lion
+  end
 
-  # libtool is glibtool on OS X
-  patch :DATA
+  depends_on "openssl"
+  depends_on "talloc"
 
   def install
     ENV.deparallelize
 
-    system "autoreconf", "-fvi"
-    system "./configure", "--prefix=#{prefix}",
-                          "--with-system-libtool",
-                          "--with-system-libltdl"
+    args = %W[
+      --prefix=#{prefix}
+      --sbindir=#{bin}
+      --localstatedir=#{var}
+      --with-openssl-includes=#{Formula["openssl"].opt_include}
+      --with-openssl-libraries=#{Formula["openssl"].opt_lib}
+      --with-talloc-lib-dir=#{Formula["talloc"].opt_lib}
+      --with-talloc-include-dir=#{Formula["talloc"].opt_include}
+    ]
+
+    system "./configure", *args
     system "make"
-    system "make install"
+    system "make", "install"
+  end
+
+  def post_install
+    (var/"run/radiusd").mkpath
+    (var/"log/radius").mkpath
+  end
+
+  test do
+    assert_match /77C8009C912CFFCF3832C92FC614B7D1/, shell_output("#{bin}/smbencrypt homebrew")
   end
 end
-
-__END__
-diff --git a/configure.in b/configure.in
-index 62b0de8..97e0243 100644
---- a/configure.in
-+++ b/configure.in
-@@ -101,7 +101,7 @@ AC_SUBST(LTDL_SUBDIRS)
- dnl use system-wide libtool, if it exists
- AC_ARG_WITH(system-libtool,
- [  --with-system-libtool   Use the libtool installed in your system (default=use our own)],
--[ AC_PATH_PROG(LIBTOOL, libtool,,$PATH:/usr/local/bin) AC_LIBTOOL_DLOPEN
-+[ AC_PATH_PROG(LIBTOOL, glibtool,,$PATH:/usr/local/bin) AC_LIBTOOL_DLOPEN
-  AC_PROG_LIBTOOL],
- [
-   LIBTOOL="`pwd`/libtool"

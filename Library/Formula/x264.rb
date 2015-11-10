@@ -1,29 +1,31 @@
-require 'formula'
-
 class X264 < Formula
-  homepage "http://www.videolan.org/developers/x264.html"
+  desc "H.264/AVC encoder"
+  homepage "https://www.videolan.org/developers/x264.html"
   # the latest commit on the stable branch
-  url "http://git.videolan.org/git/x264.git", :revision => "e260ea549226ae29832d8bc0dcfd20cffc8cf248"
-  version "r2412"
-  head "http://git.videolan.org/git/x264.git"
+  url "https://git.videolan.org/git/x264.git", :revision => "a0cd7d38acb6c31973228ab207e18344920e0aa3"
+  version "r2601"
 
   devel do
     # the latest commit on the master branch
-    url "http://git.videolan.org/git/x264.git", :revision => "ac7644073ac28d19c9cf048849bbcd515713e426"
-    version "r2431"
+    url "https://git.videolan.org/git/x264.git", :revision => "75992107adcc8317ba2888e3957a7d56f16b5cd4"
+    version "r2638"
   end
+
+  head "https://git.videolan.org/git/x264.git"
 
   bottle do
     cellar :any
-    sha1 "28d8418f2a774f057106ba67076060a45bfead9a" => :mavericks
-    sha1 "001bb62c41554f3a6479ffc6dcd6625da17f2ea4" => :mountain_lion
-    sha1 "326cb8fc003ed0c17f07e2f5a31d2a72f1d399cf" => :lion
+    sha256 "010cb2be57c48fb617749e583ad2fbeb148cc522b47d59b407dfb9f10f1f3a2b" => :el_capitan
+    sha256 "e093adfd1af594a592ace82f77bd59748e3040d263e507acd3d8ad2275292e16" => :yosemite
+    sha256 "977c077c5d38c1a5842bda75aec11831f4980ae258556b9bd9ba2184deb11faa" => :mavericks
   end
 
-  depends_on 'yasm' => :build
+  depends_on "yasm" => :build
 
-  option '10-bit', 'Build a 10-bit x264 (default: 8-bit)'
+  option "with-10-bit", "Build a 10-bit x264 (default: 8-bit)"
   option "with-mp4=", "Select mp4 output: none (default), l-smash or gpac"
+
+  deprecated_option "10-bit" => "with-10-bit"
 
   case ARGV.value "with-mp4"
   when "l-smash" then depends_on "l-smash"
@@ -42,12 +44,27 @@ class X264 < Formula
     elsif Formula["gpac"].installed?
       args << "--disable-lsmash"
     end
-    args << "--bit-depth=10" if build.include? '10-bit'
-
-    # For running version.sh correctly
-    buildpath.install_symlink cached_download/".git"
+    args << "--bit-depth=10" if build.with? "10-bit"
 
     system "./configure", *args
     system "make", "install"
+  end
+
+  test do
+    (testpath/"test.c").write <<-EOS.undent
+      #include <stdint.h>
+      #include <x264.h>
+
+      int main()
+      {
+          x264_picture_t pic;
+          x264_picture_init(&pic);
+          x264_picture_alloc(&pic, 1, 1, 1);
+          x264_picture_clean(&pic);
+          return 0;
+      }
+    EOS
+    system ENV.cc, "-lx264", "test.c", "-o", "test"
+    system "./test"
   end
 end

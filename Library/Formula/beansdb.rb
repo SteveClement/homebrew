@@ -1,24 +1,24 @@
-require 'formula'
-
 class Beansdb < Formula
-  homepage 'https://github.com/douban/beansdb'
-  head 'https://github.com/douban/beansdb.git', :branch => 'master'
-  url 'https://github.com/douban/beansdb/archive/v0.6.tar.gz'
-  sha1 '9099ce607ff3c3eba251ee34ae65a08c4e3715b9'
+  desc "Yet another distributed key-value storage system"
+  homepage "https://github.com/douban/beansdb"
+  url "https://github.com/douban/beansdb/archive/v0.6.tar.gz"
+  sha256 "b24512862f948d5191f5c43316a41f632bc386f43dcbb69b03ffffe95122a33e"
 
-  depends_on :autoconf
-  depends_on :automake
+  head do
+    url "https://github.com/douban/beansdb.git"
+    depends_on "autoconf" => :build
+    depends_on "automake" => :build
+  end
 
   def install
-    ENV.append 'CFLAGS', '-std=gnu89'
-    system "./autogen.sh"
-    system "./configure", "--prefix=#{prefix}"
-
+    ENV.append "CFLAGS", "-std=gnu89"
+    system "./autogen.sh" if build.head?
+    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
     system "make"
-    system "make install"
+    system "make", "install"
 
-    (var + 'db/beansdb').mkpath
-    (var + 'log').mkpath
+    (var/"db/beansdb").mkpath
+    (var/"log").mkpath
   end
 
   def plist; <<-EOS.undent

@@ -1,27 +1,21 @@
-require "formula"
-
 class Snap7 < Formula
+  desc "Ethernet communication suite that works natively with Siemens S7 PLCs"
   homepage "http://snap7.sourceforge.net/"
-  url "https://downloads.sourceforge.net/project/snap7/1.2.0/snap7-full-1.2.0.tar.gz"
-  sha1 "49e64997345dfcbb68cecee3e0bc098d96a96407"
+  url "https://downloads.sourceforge.net/project/snap7/1.4.0/snap7-full-1.4.0.tar.gz"
+  sha256 "5d2a4948a65e0ad2a52b1a7981f3c3209be0ef821f3d00756ee0584cf4b762bb"
 
   bottle do
     cellar :any
-    sha1 "530697d2704479af33cbbe51daf5d822206babf4" => :mavericks
-    sha1 "e6d0c563e699f217a9a4a4265fd67c678e51da62" => :mountain_lion
-    sha1 "71df6080c160980de7697395756802765c5cd3bd" => :lion
+    sha256 "b8fa94cae36795dc754f17123317bd2e816f99907cecd2522e587ec52cbdb453" => :yosemite
+    sha256 "d152d00966b20ae4429b3aabe53e91635bf2ee6125cae563778aefade1e59d0e" => :mavericks
+    sha256 "ea1eeaee1876b4ef948cdef5b5f9b9a9b8233d93ffe285ad13fe1301100ca318" => :mountain_lion
   end
 
   def install
-    archstr = MacOS.prefer_64_bit? ? "x86_64" : "i386"
     lib.mkpath
-    inreplace "build/osx/common.mk", "libsnap7.so", "libsnap7.dylib"
-    inreplace "build/osx/common.mk", "/usr/lib", lib
-
-    Dir.chdir "build/osx" do
-      system "make", "-f", "#{archstr}_osx.mk", "install"
-    end
-
+    system "make", "-C", "build/osx",
+                   "-f", "#{MacOS.preferred_arch}_osx.mk",
+                   "install", "LibInstall=#{lib}"
     include.install "release/Wrappers/c-cpp/snap7.h"
   end
 

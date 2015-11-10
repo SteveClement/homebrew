@@ -1,8 +1,8 @@
-require 'testing_env'
-require 'version'
-require 'os/mac/version'
+require "testing_env"
+require "version"
+require "os/mac/version"
 
-class MacOSVersionTests < Test::Unit::TestCase
+class MacOSVersionTests < Homebrew::TestCase
   def setup
     @v = MacOS::Version.new("10.7")
   end
@@ -38,5 +38,16 @@ class MacOSVersionTests < Test::Unit::TestCase
     assert_operator @v, :==, Version.new("10.7")
     assert_operator @v, :===, Version.new("10.7")
     assert_operator @v, :<, Version.new("10.8")
+  end
+
+  def test_from_symbol
+    assert_equal @v, MacOS::Version.from_symbol(:lion)
+    assert_raises(ArgumentError) { MacOS::Version.from_symbol(:foo) }
+  end
+
+  def test_pretty_name
+    assert_equal "El Capitan", MacOS::Version.new("10.11").pretty_name
+    assert_equal "Mountain Lion", MacOS::Version.new("10.8").pretty_name
+    assert_equal "Yosemite", MacOS::Version.new("10.10").pretty_name
   end
 end

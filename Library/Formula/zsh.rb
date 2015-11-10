@@ -1,21 +1,22 @@
-require 'formula'
-
 class Zsh < Formula
-  homepage 'http://www.zsh.org/'
-  url 'https://downloads.sourceforge.net/project/zsh/zsh/5.0.5/zsh-5.0.5.tar.bz2'
-  mirror 'http://www.zsh.org/pub/zsh-5.0.5.tar.bz2'
-  sha1 '75426146bce45ee176d9d50b32f1ced78418ae16'
+  desc "UNIX shell (command interpreter)"
+  homepage "http://www.zsh.org/"
+  url "https://downloads.sourceforge.net/project/zsh/zsh/5.1.1/zsh-5.1.1.tar.gz"
+  mirror "http://www.zsh.org/pub/zsh-5.1.1.tar.gz"
+  sha256 "94ed5b412023761bc8d2f03c173f13d625e06e5d6f0dff2c7a6e140c3fa55087"
 
   bottle do
-    sha1 "d8d7ba4016377561d5d823a30abff7c81fee1577" => :mavericks
-    sha1 "34fbefd6275edb7ee9fcc8d0ce3da4438ca412b1" => :mountain_lion
-    sha1 "63a53240287c1f11204217176aab8246eab4d43c" => :lion
+    sha256 "079cc9661532edf75b4602fffcf900d3d23a1f143f35ca3cce93a37c0fbc6ae8" => :el_capitan
+    sha256 "385e57d2ef3e6ef24925a64cbaaf85d1776d8d466ef366223d7b599583fbaddf" => :yosemite
+    sha256 "932fe97487753363d3ddd683918210367ec29104e700001bbf5cd18c2f4d59fa" => :mavericks
   end
 
-  depends_on 'gdbm'
-  depends_on 'pcre'
+  option "without-etcdir", "Disable the reading of Zsh rc files in /etc"
 
-  option 'disable-etcdir', 'Disable the reading of Zsh rc files in /etc'
+  deprecated_option "disable-etcdir" => "without-etcdir"
+
+  depends_on "gdbm"
+  depends_on "pcre"
 
   def install
     args = %W[
@@ -24,6 +25,7 @@ class Zsh < Formula
       --enable-scriptdir=#{share}/zsh/scripts
       --enable-site-fndir=#{HOMEBREW_PREFIX}/share/zsh/site-functions
       --enable-site-scriptdir=#{HOMEBREW_PREFIX}/share/zsh/site-scripts
+      --enable-runhelpdir=#{share}/zsh/help
       --enable-cap
       --enable-maildir-support
       --enable-multibyte
@@ -32,10 +34,10 @@ class Zsh < Formula
       --with-tcsetpgrp
     ]
 
-    if build.include? 'disable-etcdir'
-      args << '--disable-etcdir'
+    if build.without? "etcdir"
+      args << "--disable-etcdir"
     else
-      args << '--enable-etcdir=/etc'
+      args << "--enable-etcdir=/etc"
     end
 
     system "./configure", *args
@@ -48,15 +50,18 @@ class Zsh < Formula
     system "make", "install.info"
   end
 
-  test do
-    system "#{bin}/zsh", "--version"
-  end
-
   def caveats; <<-EOS.undent
+    In order to use this build of zsh as your login shell,
+    it must be added to /etc/shells.
     Add the following to your zshrc to access the online help:
       unalias run-help
       autoload run-help
-      HELPDIR=#{HOMEBREW_PREFIX}/share/zsh/helpfiles
+      HELPDIR=#{HOMEBREW_PREFIX}/share/zsh/help
     EOS
+  end
+
+  test do
+    assert_equal "homebrew\n",
+      shell_output("#{bin}/zsh -c 'echo homebrew'")
   end
 end
