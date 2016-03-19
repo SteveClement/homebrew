@@ -3,12 +3,14 @@ class Gjstest < Formula
   homepage "https://github.com/google/gjstest"
   url "https://github.com/google/gjstest/archive/v1.0.2.tar.gz"
   sha256 "7bf0de1c4b880b771a733c9a5ce07c71b93f073e6acda09bec7e400c91c2057c"
+  revision 2
+
   head "https://github.com/google/gjstest.git"
 
   bottle do
-    sha256 "bfcf81248ee22cdf1cc7c469a8b6c31cab40e9661c376cda708cf2daedf4e13e" => :el_capitan
-    sha256 "93eb101695f858024d64b682dbd4557bd43dc836701826389344768569be9570" => :yosemite
-    sha256 "79a6bf7fb9d74871911d47012c2bb643ebb4870d0ab616dad7a19171414df291" => :mavericks
+    sha256 "b8bc27f9817665b9623f7c90eea0bca46505905528cc383b78997802059f84ae" => :el_capitan
+    sha256 "a077ef08c34e23218f6ab306a2da20c80a8a61c54b436c8f96288234af544d49" => :yosemite
+    sha256 "1d6006881df18fc2b7ca39417c34d8dad05e7da6d01255ca9457002185c42537" => :mavericks
   end
 
   depends_on :macos => :mavericks

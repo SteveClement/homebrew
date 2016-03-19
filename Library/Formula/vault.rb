@@ -1,27 +1,27 @@
 require "language/go"
 
+# Please don't update this formula until the release is official via
+# mailing list or blog post. There's a history of GitHub tags moving around.
+# https://github.com/hashicorp/vault/issues/1051
 class Vault < Formula
   desc "Secures, stores, and tightly controls access to secrets"
   homepage "https://vaultproject.io/"
   url "https://github.com/hashicorp/vault.git",
-      :tag => "v0.3.1",
-      :revision => "2b1ddc4a7b7b9754dd55f61494de460fc07239a5"
+      :tag => "v0.5.0",
+      :revision => "a7b0aadc9ea6a33875dd6bdd9d11d3146b29beb1"
+  revision 1
 
   head "https://github.com/hashicorp/vault.git"
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "797cf64812acfe568ac93eb0c0035b7d1703e9541f663806941f1520a8944122" => :el_capitan
-    sha256 "5aef06afba8a00c257789729903b9219c7eba09c20fa04808f62f39de64d701d" => :yosemite
-    sha256 "a788d3b940c8ec821ab80afaa71e05c35397deb57afc8d9489d9250872979f8a" => :mavericks
+    sha256 "08ce84108d5b403aebed4b91dcb427e619cb86e8fbbbeec983411aa17bd604c3" => :el_capitan
+    sha256 "2a09b553384c15e2152f24371b2751366ef065a7f856c1643685733a1ef88abb" => :yosemite
+    sha256 "35425eeda9c1936e524ccb235d9e0f9aac9e39e4db11e04012beae929e58c569" => :mavericks
   end
 
   depends_on "go" => :build
-
-  go_resource "github.com/tools/godep" do
-    url "https://github.com/tools/godep.git",
-        :revision => "e2d1eb1649515318386cc637d8996ab37d6baa5e"
-  end
+  depends_on "godep" => :build
 
   # godep's dependencies
   go_resource "github.com/kr/fs" do
@@ -31,12 +31,12 @@ class Vault < Formula
 
   go_resource "golang.org/x/tools" do
     url "https://go.googlesource.com/tools.git",
-        :revision => "997b3545fd86c3a2d8e5fe6366174d7786e71278"
+        :revision => "fe74a4186116b8d7dd38a723993e0d84f8834b34"
   end
 
   go_resource "github.com/mitchellh/gox" do
     url "https://github.com/mitchellh/gox.git",
-        :revision => "a5a468f84d74eb51ece602cb113edeb37167912f"
+        :revision => "39862d88e853ecc97f45e91c1cdcb1b312c51eaa"
   end
 
   # gox dependency
@@ -54,10 +54,6 @@ class Vault < Formula
     ENV.prepend_create_path "PATH", gopath/"bin"
 
     Language::Go.stage_deps resources, gopath/"src"
-
-    cd gopath/"src/github.com/tools/godep" do
-      system "go", "install"
-    end
 
     cd gopath/"src/github.com/mitchellh/gox" do
       system "go", "install"

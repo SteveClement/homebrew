@@ -1,29 +1,29 @@
 class Vdirsyncer < Formula
   desc "Synchronize calendars and contacts"
   homepage "https://github.com/untitaker/vdirsyncer"
-  url "https://pypi.python.org/packages/source/v/vdirsyncer/vdirsyncer-0.7.3.tar.gz"
-  sha256 "3e87df25f7f5af172f2063e39deccac7c5477a2be3c7ff16183b6b8e9f2d112a"
+  url "https://pypi.python.org/packages/source/v/vdirsyncer/vdirsyncer-0.9.2.tar.gz"
+  sha256 "98b0eceb767b2062ff185221294e35a27d276cb2d74cf3450b646af2d90121bc"
   head "https://github.com/untitaker/vdirsyncer.git"
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "074aadb17cfe961bb81842fc7391db12e3d2e4bd44690479d7535d3bc2c1cbbc" => :el_capitan
-    sha256 "1068d4515c5b9fa951dac43c9fb10fc7b7a33ab1252ef2d1547de2504da6b1bb" => :yosemite
-    sha256 "6c5d879d6a338b6fb05cc3800cff22aa8e91c402dc1d0288e6ce6f94606474a7" => :mavericks
+    sha256 "d7a9ebe3ff7c7b8f53d9575144b1fceeb89007aa57985232e92bde7c9d3e3fc2" => :el_capitan
+    sha256 "aa510ea0034366a99357e3c5990eb0c81ff16244386bcc9c7c584803f0d61926" => :yosemite
+    sha256 "15a8a1fe939db8d29a4ec6c2fdbf18759e85b6c51fa5bbcc985ae82b9243cf81" => :mavericks
   end
 
-  option "without-keyring", "Build without python-keyring support"
+  option "with-remotestorage", "Build with support for remote-storage"
 
   depends_on :python3
 
-  resource "keyring" do
-    url "https://pypi.python.org/packages/source/k/keyring/keyring-5.4.tar.gz"
-    sha256 "45891cd0af4c4af70fbed7ec6e3964d0261c14188de9ab31030c9d02272e22d2"
+  resource "requests_oauthlib" do
+    url "https://pypi.python.org/packages/source/r/requests-oauthlib/requests-oauthlib-0.6.1.tar.gz"
+    sha256 "905306080ec0cc6b3c65c8101f471fccfdb9994c16dd116524fd3fc0790d46d7"
   end
 
   resource "click" do
-    url "https://pypi.python.org/packages/source/c/click/click-5.1.tar.gz"
-    sha256 "678c98275431fad324275dec63791e4a17558b40e5a110e20a82866139a85a5a"
+    url "https://pypi.python.org/packages/source/c/click/click-6.3.tar.gz"
+    sha256 "b720d9faabe193287b71e3c26082b0f249501288e153b7e7cfce3bb87ac8cc1c"
   end
 
   resource "click_threading" do
@@ -32,35 +32,35 @@ class Vdirsyncer < Formula
   end
 
   resource "click_log" do
-    url "https://pypi.python.org/packages/source/c/click-log/click-log-0.1.1.tar.gz"
-    sha256 "0bc7e69311007adc4b5304d47933761999a43a18a87b9b7f2aa12b5e256f72fc"
+    url "https://pypi.python.org/packages/source/c/click-log/click-log-0.1.3.tar.gz"
+    sha256 "fd8dc8d65947ce6d6ee8ab3101fb0bb9015b9070730ada3f73ec761beb0ead4d"
   end
 
   resource "requests" do
-    url "https://pypi.python.org/packages/source/r/requests/requests-2.7.0.tar.gz"
-    sha256 "398a3db6d61899d25fd4a06c6ca12051b0ce171d705decd7ed5511517b4bb93d"
-  end
-
-  resource "lxml" do
-    url "https://pypi.python.org/packages/source/l/lxml/lxml-3.4.4.tar.gz"
-    sha256 "b3d362bac471172747cda3513238f115cbd6c5f8b8e6319bf6a97a7892724099"
+    url "https://pypi.python.org/packages/source/r/requests/requests-2.9.1.tar.gz"
+    sha256 "c577815dd00f1394203fc44eb979724b098f88264a9ef898ee45b8e5e9cf587f"
   end
 
   resource "requests-toolbelt" do
-    url "https://pypi.python.org/packages/source/r/requests-toolbelt/requests-toolbelt-0.4.0.tar.gz"
-    sha256 "15b74b90a63841b8430d6301e5062cd92929b1074b0c95bf62166b8239db1a96"
+    url "https://pypi.python.org/packages/source/r/requests-toolbelt/requests-toolbelt-0.6.0.tar.gz"
+    sha256 "cc4e9c0ef810d6dfd165ca680330b65a4cf8a3f08f5f08ecd50a0253a08e541f"
+  end
+
+  resource "lxml" do
+    url "https://pypi.python.org/packages/source/l/lxml/lxml-3.5.0.tar.gz"
+    sha256 "349f93e3a4b09cc59418854ab8013d027d246757c51744bf20069bc89016f578"
   end
 
   resource "atomicwrites" do
-    url "https://pypi.python.org/packages/source/a/atomicwrites/atomicwrites-0.1.5.tar.gz"
-    sha256 "9b16a8f1d366fb550f3d5a5ed4587022735f139a4187735466f34cf4577e4eaa"
+    url "https://pypi.python.org/packages/source/a/atomicwrites/atomicwrites-0.1.9.tar.gz"
+    sha256 "7cdfcee8c064bc0ba30b0444ba0919ebafccf5b0b1916c8cde07e410042c4023"
   end
 
   def install
     version = Language::Python.major_minor_version "python3"
     ENV.prepend_create_path "PYTHONPATH", libexec/"vendor/lib/python#{version}/site-packages"
     rs = %w[click click_threading click_log requests lxml requests-toolbelt atomicwrites]
-    rs << "keyring" if build.with? "keyring"
+    rs << "requests_oauthlib" if build.with? "remotestorage"
     rs.each do |r|
       resource(r).stage do
         system "python3", *Language::Python.setup_install_args(libexec/"vendor")

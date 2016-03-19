@@ -3,16 +3,16 @@ require "language/go"
 class Ghq < Formula
   desc "Remote repository management made easy"
   homepage "https://github.com/motemen/ghq"
-  url "https://github.com/motemen/ghq/archive/v0.7.1.tar.gz"
-  sha256 "c43c469e47761ca67103c056c79d976933265905bd7ddd662035162532c76fb2"
+  url "https://github.com/motemen/ghq/archive/v0.7.4.tar.gz"
+  sha256 "f6e79a7efec2cc11dd8489ae31619de85f15b588158d663256bc9fd45aca6a5d"
 
   head "https://github.com/motemen/ghq.git"
 
   bottle do
-    cellar :any
-    sha256 "df6df9c2100ad46586d62233dfdb99401bb5beab42a0d87635419bf439797212" => :yosemite
-    sha256 "80a4db2f17fb2c3614604231921fd867f0a85e2034942c96e1f9d33dd6b1b136" => :mavericks
-    sha256 "7d6e66fef647214c51a79a0759be423e990894c3dc03be45fc654b8e74270148" => :mountain_lion
+    cellar :any_skip_relocation
+    sha256 "b54f10088af100659f5ddaa493ed0a67227a97996c476b2beb2e1f66109c4c96" => :el_capitan
+    sha256 "1640e26475d3ced7964f622de92b62f1eb216d36a880b512eb27f3655d607904" => :yosemite
+    sha256 "d87b3b0ab5a3a1f62d4ab34da198a20bb08abab16b21cdd98ef5c194220fb5de" => :mavericks
   end
 
   option "without-completions", "Disable zsh completions"
@@ -20,11 +20,11 @@ class Ghq < Formula
   depends_on "go" => :build
 
   go_resource "github.com/codegangsta/cli" do
-    url "https://github.com/codegangsta/cli.git", :revision => "565493f259bf868adb54d45d5f4c68d405117adf"
+    url "https://github.com/codegangsta/cli.git", :revision => "aca5b047ed14d17224157c3434ea93bf6cdaadee"
   end
 
   go_resource "github.com/mitchellh/go-homedir" do
-    url "https://github.com/mitchellh/go-homedir.git", :revision => "1f6da4a72e57d4e7edd4a7295a585e0a3999a2d4"
+    url "https://github.com/mitchellh/go-homedir.git", :revision => "981ab348d865cf048eb7d17e78ac7192632d8415"
   end
 
   go_resource "github.com/motemen/go-colorine" do

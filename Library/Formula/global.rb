@@ -1,14 +1,14 @@
 class Global < Formula
   desc "Source code tag system"
   homepage "https://www.gnu.org/software/global/"
-  url "http://ftpmirror.gnu.org/global/global-6.5.1.tar.gz"
-  mirror "https://ftp.gnu.org/gnu/global/global-6.5.1.tar.gz"
-  sha256 "0e9d5227d400e8cb2ffa1732d98b8735d58d4bf8476c2845365770fdd5b264f8"
+  url "http://ftpmirror.gnu.org/global/global-6.5.3.tar.gz"
+  mirror "https://ftp.gnu.org/gnu/global/global-6.5.3.tar.gz"
+  sha256 "336f91f1d4a84469bc37a0dc7e9dc7cde9154cf677bb1bb5cd220c9b41b80302"
 
   bottle do
-    sha256 "2c15f88285fc7eeb875e73808eac0f577335c7cf1c1727020909c48381aea623" => :el_capitan
-    sha256 "20b49507cf026b517f1b0a855f0cbf804ae16a20f2fe5073f2b1b957e95514ec" => :yosemite
-    sha256 "0b132bd00315344cf41234882274d50b2a36fe97647d05cc805571c05ddaf314" => :mavericks
+    sha256 "4029424bb6f53c3a3dd093757b898f0ed1b980b96812a659641fb23a62b8c2fb" => :el_capitan
+    sha256 "c8f45da6fbd4ca99a573a5370978c99eb1ab82438b7064f70f5ca25638fef8d2" => :yosemite
+    sha256 "5aa89dd031923a4c3855c6d8a952c9cfc4fd48143ad11ecce6f1a54897b141ab" => :mavericks
   end
 
   head do
@@ -19,17 +19,19 @@ class Global < Formula
     depends_on "libtool" => :build
   end
 
-  option "with-exuberant-ctags", "Enable Exuberant Ctags as a plug-in parser"
+  option "with-ctags", "Enable Exuberant Ctags as a plug-in parser"
   option "with-pygments", "Enable Pygments as a plug-in parser (should enable exuberent-ctags too)"
   option "with-sqlite3", "Use SQLite3 API instead of BSD/DB API for making tag files"
 
-  depends_on "ctags" if build.with? "exuberant-ctags"
+  deprecated_option "with-exuberant-ctags" => "with-ctags"
+
+  depends_on "ctags" => :optional
 
   skip_clean "lib/gtags"
 
   resource "pygments" do
-    url "https://pypi.python.org/packages/source/P/Pygments/Pygments-2.0.2.tar.gz"
-    sha256 "7320919084e6dac8f4540638a46447a3bd730fca172afc17d2c03eed22cf4f51"
+    url "https://pypi.python.org/packages/source/P/Pygments/Pygments-2.1.tar.gz"
+    sha256 "13a0ef5fafd7b16cf995bc28fe7aab0780dab1b2fda0fc89e033709af8b8a47b"
   end
 
   def install
@@ -43,7 +45,7 @@ class Global < Formula
 
     args << "--with-sqlite3" if build.with? "sqlite3"
 
-    if build.with? "exuberant-ctags"
+    if build.with? "ctags"
       args << "--with-exuberant-ctags=#{Formula["ctags"].opt_bin}/ctags"
     end
 
@@ -60,7 +62,6 @@ class Global < Formula
       bin.env_script_all_files(libexec/"bin", :PYTHONPATH => ENV["PYTHONPATH"])
     end
 
-    inreplace "gtags.conf", prefix, opt_prefix
     etc.install "gtags.conf"
 
     # we copy these in already
@@ -73,7 +74,7 @@ class Global < Formula
        int c2func (void) { return 0; }
        void cfunc (void) {int cvar = c2func(); }")
     EOF
-    if build.with?("pygments") || build.with?("exuberant-ctags")
+    if build.with?("pygments") || build.with?("ctags")
       (testpath/"test.py").write <<-EOF
         def py2func ():
              return 0
@@ -83,7 +84,7 @@ class Global < Formula
     end
     if build.with? "pygments"
       assert shell_output("#{bin}/gtags --gtagsconf=#{share}/gtags/gtags.conf --gtagslabel=pygments .")
-      if build.with? "exuberant-ctags"
+      if build.with? "ctags"
         assert_match /test\.c/, shell_output("#{bin}/global -d cfunc")
         assert_match /test\.c/, shell_output("#{bin}/global -d c2func")
         assert_match /test\.c/, shell_output("#{bin}/global -r c2func")
@@ -101,7 +102,7 @@ class Global < Formula
         assert_match /test\.py/, shell_output("#{bin}/global -s pyvar")
       end
     end
-    if build.with? "exuberant-ctags"
+    if build.with? "ctags"
       assert shell_output("#{bin}/gtags --gtagsconf=#{share}/gtags/gtags.conf --gtagslabel=exuberant-ctags .")
       # ctags only yields definitions
       assert_match /test\.c/, shell_output("#{bin}/global -d cfunc   # passes")

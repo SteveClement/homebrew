@@ -36,7 +36,7 @@ brew switch $FORMULA $VERSION
 
 Use `brew info $FORMULA` to check what versions are installed but not currently activated, then `brew switch $FORMULA $VERSION` to activate the desired version. This can be useful if you would like to switch between versions of a formula.
 
-## Install into Homebrew without formulas
+## Install into Homebrew without formulae
 
 ```sh
 ./configure --prefix=/usr/local/Cellar/foo/1.2 && make && make install && brew link foo
@@ -55,7 +55,7 @@ source $(brew --repository)/Library/Contributions/brew_bash_completion.sh
 Run in terminal (may require `sudo`):
 
 ```zsh
-ln -s "$(brew --prefix)/Library/Contributions/brew_zsh_completion.zsh" /usr/local/share/zsh/site-functions
+ln -s "$(brew --prefix)/Library/Contributions/brew_zsh_completion.zsh" /usr/local/share/zsh/site-functions/_brew
 ```
 
 ## Pre-downloading a file for a formula
@@ -71,11 +71,11 @@ name }}-{{ version }}</code>.  In the case of Erlang, this requires
 renaming the file from <code>otp_src_R13B03</code> to
 <code>erlang-R13B03</code>.
 
-`brew –-cache -s erlang` will print the correct name of the cached
+`brew --cache -s erlang` will print the correct name of the cached
 download.  This means instead of manually renaming a formula, you can
 run `mv the_tarball $(brew --cache -s $FORMULA)`.
 
-You can also pre-cache the download by using the command `brew fetch formula` which also displays the SHA1 and SHA256 values. This can be useful for updating formulae to new versions.
+You can also pre-cache the download by using the command `brew fetch formula` which also displays the SHA256 value. This can be useful for updating formulae to new versions.
 
 ## Using Homebrew behind a proxy
 

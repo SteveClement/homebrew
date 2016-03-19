@@ -16,17 +16,18 @@ end
 class Monetdb < Formula
   desc "Column-store database"
   homepage "https://www.monetdb.org/"
-  url "https://www.monetdb.org/downloads/sources/Jul2015-SP1/MonetDB-11.21.11.zip"
-  sha256 "9ca39c4943f1667b62337d6816b100af5f02551f999c22dfd5d71a7c2773eafb"
+  url "https://www.monetdb.org/downloads/sources/Jul2015-SP2/MonetDB-11.21.13.zip"
+  sha256 "1638d74fbfbccc61e7e72e470114e24f6b31f3449e28b14febeffa8bd380ef69"
 
   bottle do
-    sha256 "694824bd2c7e7a199bbff0ec2b4d8afd827339f9bcd22c17d9508dbd8e3e4c34" => :el_capitan
-    sha256 "f1cb35fa9fdd74aeeaf64fca8404ae8979496417b8ee3028b1e33e3762f0c3e0" => :yosemite
-    sha256 "735b0a0099edb416895cc5c7ba2bc265628db23a7ccd3bf44342f90a6f3cf97b" => :mavericks
+    revision 1
+    sha256 "160f961fdae67e0a0c3f28b6ef26baa16343505ff12aee36737540b4437441ff" => :el_capitan
+    sha256 "ccf122c79943fb36e97259e84a7897e5d07c9cfbdcd6fb7390287c18f0317f7e" => :yosemite
+    sha256 "1214716dc3f3d40183fea68685943bddccc55f477d7d3fa5dfebae525680077c" => :mavericks
   end
 
   head do
-    url "http://dev.monetdb.org/hg/MonetDB", :using => :hg
+    url "https://dev.monetdb.org/hg/MonetDB", :using => :hg
 
     depends_on "libtool" => :build
     depends_on "gettext" => :build

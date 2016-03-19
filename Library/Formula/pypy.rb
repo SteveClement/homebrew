@@ -1,15 +1,20 @@
 class Pypy < Formula
-  desc "Implementation of Python 2 in Python"
+  desc "Highly performant implementation of Python 2 in Python"
   homepage "http://pypy.org/"
-  url "https://bitbucket.org/pypy/pypy/downloads/pypy-4.0.0-src.tar.bz2"
-  sha256 "acff480e44ce92acd057f2e786775af36dc3c2cd12e9efc60a1ac6a562ad7b4d"
+  url "https://bitbucket.org/pypy/pypy/downloads/pypy-5.0.0-src.tar.bz2"
+  sha256 "89027b1b33553b53ff7733dc4838f0a76af23552c0d915d9f6de5875b8d7d4ab"
 
   bottle do
     cellar :any
-    sha256 "dc76aa84fb53dfa27e99d4e7b6203c88baa05728855db2d2ccbe5c1451daa65b" => :el_capitan
-    sha256 "ba316ef2f1f7471df101dc8ae86a30249931beb8c8e84ae561eb0b2f14db1d37" => :yosemite
-    sha256 "2ee52ddf499073d9591d48ab20b18ed578733415d34a5007a5fe4805ccbe9bff" => :mavericks
+    sha256 "275ec2c8023a806524dce0f7693840047558d26e5b586a4da5db0bac79fef0c6" => :el_capitan
+    sha256 "607fa6f900afcd58368ea10b640616821622375257faa357419b8e340f97ff2a" => :yosemite
+    sha256 "8bab89d17343cc05c58c30b82115ba137315867da8f23b3d3f7b60e0cfe4c83e" => :mavericks
   end
+
+  option "without-bootstrap", "Translate Pypy with system Python instead of " \
+                              "downloading a Pypy binary distribution to " \
+                              "perform the translation (adds 30-60 minutes " \
+                              "to build)"
 
   depends_on :arch => :x86_64
   depends_on "pkg-config" => :build
@@ -17,24 +22,19 @@ class Pypy < Formula
   depends_on "sqlite" => :recommended
   depends_on "openssl"
 
-  option "without-bootstrap", "Translate Pypy with system Python instead of " \
-                              "downloading a Pypy binary distribution to " \
-                              "perform the translation (adds 30-60 minutes " \
-                              "to build)"
-
   resource "bootstrap" do
     url "https://bitbucket.org/pypy/pypy/downloads/pypy-2.5.0-osx64.tar.bz2"
     sha256 "30b392b969b54cde281b07f5c10865a7f2e11a229c46b8af384ca1d3fe8d4e6e"
   end
 
   resource "setuptools" do
-    url "https://pypi.python.org/packages/source/s/setuptools/setuptools-18.4.tar.gz"
-    sha256 "cdea5098e60b4ad83453d58723a61dc481ca8e2df251fe4ccbea9afa5a7d111f"
+    url "https://pypi.python.org/packages/source/s/setuptools/setuptools-20.2.2.tar.gz"
+    sha256 "24fcfc15364a9fe09a220f37d2dcedc849795e3de3e4b393ee988e66a9cbd85a"
   end
 
   resource "pip" do
-    url "https://pypi.python.org/packages/source/p/pip/pip-7.1.2.tar.gz"
-    sha256 "ca047986f0528cfa975a14fb9f7f106271d4e0c3fe1ddced6c1db2e7ae57a477"
+    url "https://pypi.python.org/packages/source/p/pip/pip-8.1.0.tar.gz"
+    sha256 "d8faa75dd7d0737b16d50cd0a56dc91a631c79ecfd8d38b80f6ee929ec82043e"
   end
 
   # https://bugs.launchpad.net/ubuntu/+source/gcc-4.2/+bug/187391
@@ -76,10 +76,6 @@ class Pypy < Formula
     # scripts will find it.
     bin.install_symlink libexec/"bin/pypy"
     lib.install_symlink libexec/"lib/libpypy-c.dylib"
-
-    %w[setuptools pip].each do |r|
-      (libexec/r).install resource(r)
-    end
   end
 
   def post_install
@@ -91,6 +87,12 @@ class Pypy < Formula
     prefix_site_packages.mkpath
 
     # Symlink the prefix site-packages into the cellar.
+    unless (libexec/"site-packages").symlink?
+      # fix the case where libexec/site-packages/site-packages was installed
+      rm_rf libexec/"site-packages/site-packages"
+      mv Dir[libexec/"site-packages/*"], prefix_site_packages
+      rm_rf libexec/"site-packages"
+    end
     libexec.install_symlink prefix_site_packages
 
     # Tell distutils-based installers where to put scripts
@@ -101,7 +103,7 @@ class Pypy < Formula
     EOF
 
     %w[setuptools pip].each do |pkg|
-      (libexec/pkg).cd do
+      resource(pkg).stage do
         system bin/"pypy", "-s", "setup.py", "--no-user-cfg", "install",
                "--force", "--verbose"
       end

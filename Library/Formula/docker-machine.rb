@@ -3,33 +3,40 @@ require "language/go"
 class DockerMachine < Formula
   desc "Create Docker hosts locally and on cloud providers"
   homepage "https://docs.docker.com/machine"
-  url "https://github.com/docker/machine/archive/v0.5.0.tar.gz"
-  sha256 "35f2c9e95b962caf5557e6f1458fbf4ac85253a92ed04d3ace0f958a9e3c9676"
+  url "https://github.com/docker/machine.git",
+    :tag => "v0.6.0",
+    :revision => "e27fb87286cb8e7454183ce46a6e1e84b31965e9"
+
   head "https://github.com/docker/machine.git"
 
   bottle do
     cellar :any_skip_relocation
-    revision 1
-    sha256 "f628b6d048aa0b27887c6dfffbc7df2bcbe3a76986773ee9e4930bae88ad4e94" => :el_capitan
-    sha256 "39f62a9ff38cffaba409304ea5ea2bf6d7dafa23fa37f4573d72b31cd517c9ff" => :yosemite
-    sha256 "01ac8d8de1389f2f28a00af8e9a772addbd3141ccdf8087f285d00cc51058285" => :mavericks
+    sha256 "d8f5419d5b9fdf3632e546190755d63df852fa89125b8bb68d932c3c30650286" => :el_capitan
+    sha256 "b5b2a08a5295290799e7d352cb177659a64823ccea5ddc3246c04ece2c16e8d1" => :yosemite
+    sha256 "ef3a096090e2abf7cae56f52b9d4f5aed14cc79ae534d4fd21ff5b11be159cd5" => :mavericks
   end
 
   depends_on "go" => :build
   depends_on "automake" => :build
 
   def install
+    ENV["GOBIN"] = bin
     ENV["GOPATH"] = buildpath
-    mkdir_p buildpath/"src/github.com/docker/"
-    ln_sf buildpath, buildpath/"src/github.com/docker/machine"
+    ENV["GOHOME"] = buildpath
 
-    system "make", "build"
-    bin.install Dir["bin/*"]
+    path = buildpath/"src/github.com/docker/machine"
+    path.install Dir["*"]
 
-    bash_completion.install Dir["contrib/completion/bash/*.bash"]
+    Language::Go.stage_deps resources, buildpath/"src"
+
+    cd path do
+      system "make", "build"
+      bin.install Dir["bin/*"]
+      bash_completion.install Dir["contrib/completion/bash/*.bash"]
+    end
   end
 
   test do
-    system bin/"docker-machine", "ls"
+    assert_match /#{version}/, shell_output(bin/"docker-machine --version")
   end
 end

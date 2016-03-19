@@ -1,33 +1,31 @@
 class Keybase < Formula
   desc "Command-line interface to Keybase.io"
   homepage "https://keybase.io/"
-  url "https://github.com/keybase/node-client/archive/v0.8.23.tar.gz"
-  sha256 "20e7e7e7a125ddb3b0e7023c3dcaf12f12c7b183822592b164ca11dd1e6f9a25"
-  head "https://github.com/keybase/node-client.git"
+  url "https://github.com/keybase/client/archive/v1.0.14-1.tar.gz"
+  version "1.0.14-1"
+  sha256 "ef8f6d01206428a99558885ecec8de99089a60fe5f4b6e6f425e01a3fb368853"
 
-  bottle :unneeded
+  head "https://github.com/keybase/client.git"
 
-  depends_on "node"
-  depends_on :gpg
+  bottle do
+    cellar :any_skip_relocation
+    sha256 "7bb1a2c16840f219e24fe79e2b125a89324416bd8a9f3e42c75231a58c31fc00" => :el_capitan
+    sha256 "91c6561cedf3bc485d27d82a55e9a66385cff3db17ce27d47b0f6e5b5d231d7a" => :yosemite
+    sha256 "12198ddd5fd25e5c77f154428470ca21504f6495fd9f8c3e7f44df7d05fa73e5" => :mavericks
+  end
+
+  depends_on "go" => :build
 
   def install
-    # remove self-update command
-    # https://github.com/keybase/keybase-issues/issues/1477
-    rm "lib/command/update.js"
-    inreplace "lib/command/all.js", '"update", ', ""
-    inreplace "lib/req.js", "keybase-installer", "brew update && brew upgrade keybase"
+    ENV["GOPATH"] = buildpath
+    ENV["GOBIN"] = buildpath
+    (buildpath/"src/github.com/keybase/client/").install "go"
 
-    libexec.install Dir["*"]
-    (bin/"keybase").write <<-EOS.undent
-      #!/bin/sh
-      export KEYBASE_BIN="#{bin}/keybase"
-      exec "#{Formula["node"].opt_bin}/node" "#{libexec}/bin/main.js" "$@"
-    EOS
+    system "go", "build", "-a", "-tags", "production brew", "github.com/keybase/client/go/keybase"
+    bin.install "keybase"
   end
 
   test do
-    # Keybase requires a valid GPG keychain to be set up. Fetch Homebrew's pubkey.
-    system "gpg", "--keyserver", "pgp.mit.edu", "--recv-keys", "0xE33A3D3CCE59E297"
-    system "#{bin}/keybase", "id", "homebrew"
+    system "#{bin}/keybase", "-standalone", "id", "homebrew"
   end
 end

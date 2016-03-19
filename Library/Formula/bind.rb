@@ -1,15 +1,16 @@
 class Bind < Formula
   desc "Implementation of the DNS protocols"
   homepage "https://www.isc.org/downloads/bind/"
-  url "https://ftp.isc.org/isc/bind9/9.10.3/bind-9.10.3.tar.gz"
-  mirror "https://fossies.org/linux/misc/dns/bind9/9.10.3/bind-9.10.3.tar.gz"
-  sha256 "9ac33bd8754ab4b6ee449b1b2aa88e09f51cda088486f4ab1585acd920b98ff0"
+  url "https://ftp.isc.org/isc/bind9/9.10.3-P4/bind-9.10.3-P4.tar.gz"
+  mirror "https://fossies.org/linux/misc/dns/bind9/9.10.3-P4/bind-9.10.3-P4.tar.gz"
+  version "9.10.3-P4"
+  sha256 "2ac044b5fbdf45fb45107af0df961b3b7cb5262a3bf1948ed3fe7a170dd13e3e"
   head "https://source.isc.org/git/bind9.git"
 
   bottle do
-    sha256 "e3e9673cf609149984a4061f3104b40c1eefdaab133c720ef992e60e09181a86" => :el_capitan
-    sha256 "03eb2417b794d4584986284b81225760ca7650a65caea60841b991a824c67597" => :yosemite
-    sha256 "d6c3322b9cfd9a4dde86e5527d106721b60924247146ca5df4348cd48586d857" => :mavericks
+    sha256 "9b1a19ec5f2bc1036d93d757061d6c9c89aa0f94824d76218994267668689665" => :el_capitan
+    sha256 "29e6d2d8ea9fd9199fdba6ceea097fb22b81ce9fb1a188b185648363f7761b85" => :yosemite
+    sha256 "8e5e517a4ddbb92fb2bf83f41a322d482a1fc1bf921cfa23aca1c29dc24d2b12" => :mavericks
   end
 
   depends_on "openssl"
@@ -32,7 +33,7 @@ class Bind < Formula
     system "make"
     system "make", "install"
 
-    (buildpath+"named.conf").write named_conf
+    (buildpath/"named.conf").write named_conf
     system "#{sbin}/rndc-confgen", "-a", "-c", "#{buildpath}/rndc.key"
     etc.install "named.conf", "rndc.key"
   end
@@ -42,10 +43,10 @@ class Bind < Formula
 
     # Create initial configuration/zone/ca files.
     # (Mirrors Apple system install from 10.8)
-    unless (var+"named").exist?
-      (var+"named").mkpath
-      (var+"named/localhost.zone").write localhost_zone
-      (var+"named/named.local").write named_local
+    unless (var/"named").exist?
+      (var/"named").mkpath
+      (var/"named/localhost.zone").write localhost_zone
+      (var/"named/named.local").write named_local
     end
   end
 

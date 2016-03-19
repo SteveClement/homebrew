@@ -1,11 +1,13 @@
 class Ghi < Formula
   desc "Work on GitHub issues on the command-line"
   homepage "https://github.com/stephencelis/ghi"
-  url "https://github.com/stephencelis/ghi/archive/1.0.3.tar.gz"
-  sha256 "98ddf904bfd78d7363986b75ecea294933c8b98d9c1d2828419fddcaeadc0fdd"
+  url "https://github.com/stephencelis/ghi/archive/1.1.1.tar.gz"
+  sha256 "a19fd947f1268d9f087d2a342964dfc1cb3aa96de970e82b8daf22461e07e49b"
   head "https://github.com/stephencelis/ghi.git"
 
   bottle :unneeded
+
+  depends_on "pygments.rb" => :ruby
 
   def install
     bin.install "ghi"

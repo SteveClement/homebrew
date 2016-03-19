@@ -3,8 +3,8 @@ class Openvdb < Formula
   homepage "http://www.openvdb.org/"
   url "https://github.com/dreamworksanimation/openvdb/archive/v3.1.0.tar.gz"
   sha256 "b95a32f4f0195452a64870bda978999a719006a0c036b9ac985b466532d32d4b"
-  head "https://github.com/dreamworksanimation/openvdb.git"
   revision 1
+  head "https://github.com/dreamworksanimation/openvdb.git"
 
   bottle do
     sha256 "d60e3a904697fd6d4722a888ee929ffa42ca44da0fc3d82d2935bc81c6612283" => :el_capitan
@@ -13,9 +13,11 @@ class Openvdb < Formula
   end
 
   option "with-viewer", "Installs the command-line tool to view OpenVDB files"
-  option "with-tests", "Installs the unit tests for the OpenVDB library"
+  option "with-test", "Installs the unit tests for the OpenVDB library"
   option "with-logging", "Requires log4cplus"
   option "with-docs", "Installs documentation"
+
+  deprecated_option "with-tests" => "with-test"
 
   depends_on "openexr"
   depends_on "ilmbase"
@@ -29,7 +31,7 @@ class Openvdb < Formula
   end
 
   depends_on "homebrew/versions/glfw3" if build.with? "viewer"
-  depends_on "cppunit" if build.with? "tests"
+  depends_on "cppunit" if build.with? "test"
   depends_on "doxygen" if build.with? "docs"
   depends_on "log4cplus" if build.with? "logging"
   needs :cxx11
@@ -53,7 +55,7 @@ class Openvdb < Formula
       "EXR_LIB_DIR=#{Formula["openexr"].opt_lib}/lib",
       "BLOSC_INCL_DIR=", # Blosc is not yet supported.
       "PYTHON_VERSION=",
-      "NUMPY_INCL_DIR="
+      "NUMPY_INCL_DIR=",
     ]
 
     if build.with? "jemalloc"

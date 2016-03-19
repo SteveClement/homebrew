@@ -6,23 +6,21 @@ class Postgrest < Formula
 
   desc "Serves a fully RESTful API from any existing PostgreSQL database."
   homepage "https://github.com/begriffs/postgrest"
-  url "https://github.com/begriffs/postgrest/archive/v0.2.12.0.tar.gz"
-  sha256 "9f7277720b947b06eb53ac0a54686eb437253d417695bc756220e703532a725a"
+  url "https://github.com/begriffs/postgrest/archive/v0.3.1.0.tar.gz"
+  sha256 "1ec59c3455b88017f3b2acbd27ecf41dd25fb610902feb1581ac518411b1a740"
 
   bottle do
-    sha256 "fc88d2190b524fde39a99855c134e5b5ed68499b5533566c097dd495f9fcfa47" => :el_capitan
-    sha256 "4be5727902c6f9266aa9d885c21334db4178ba0aed72a6e227a168a3b10e8441" => :yosemite
-    sha256 "aff43d1b48e1795015c03bac5467e11538e7d67ede70caa1044f2bef02245f4f" => :mavericks
+    sha256 "4e5875fafbe9c5b5764862484b5ba0eb82015cc58b563cda8b1ddc2f21fedde4" => :el_capitan
+    sha256 "2652e9c13fe44c378455fce18f528f926ade986e94d9c2cafc260c49d32c50a3" => :yosemite
+    sha256 "d1eecf756cd1e8c0ad8b3a85588e9b4bbb2897f5d539d329fc8315ea532abea2" => :mavericks
   end
 
   depends_on "ghc" => :build
   depends_on "cabal-install" => :build
   depends_on "postgresql"
 
-  setup_ghc_compilers
-
   def install
-    install_cabal_package
+    install_cabal_package :using => ["happy"]
   end
 
   test do
@@ -39,16 +37,21 @@ class Postgrest < Formula
 
     begin
       system "#{pg_bin}/createdb", "-w", "-p", pg_port, "-U", pg_user, test_db
-      pid = Process.spawn("postgrest -d #{test_db} -P #{pg_port} " \
-                          "-U #{pg_user} -a #{pg_user} -p 55560",
-                          :out => "/dev/null", :err => "/dev/null")
+      pid = fork do
+        exec "postgrest", "postgres://#{pg_user}@localhost:#{pg_port}/#{test_db}",
+          "-a", pg_user, "-p", "55560"
+      end
+      Process.detach(pid)
       sleep(5) # Wait for the server to start
       response = Net::HTTP.get(URI("http://localhost:55560"))
       assert_equal "[]", response
     ensure
-      Process.kill("TERM", pid) if pid
-      system "#{pg_bin}/pg_ctl", "-D", testpath/test_db, "stop",
-        "-s", "-m", "fast"
+      begin
+        Process.kill("TERM", pid) if pid
+      ensure
+        system "#{pg_bin}/pg_ctl", "-D", testpath/test_db, "stop",
+          "-s", "-m", "fast"
+      end
     end
   end
 end

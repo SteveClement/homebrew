@@ -2,13 +2,28 @@ class Parrot < Formula
   desc "Open source virtual machine (for Perl6, et al.)"
   homepage "http://www.parrot.org/"
   head "https://github.com/parrot/parrot.git"
-  url "ftp://ftp.parrot.org/pub/parrot/releases/supported/6.9.0/parrot-6.9.0.tar.bz2"
-  sha256 "ad5f3723c216675b9ebc2e3d3807d24fd13aa55e1eb3e7ffcad4062e0026f482"
+
+  stable do
+    url "ftp://ftp.parrot.org/pub/parrot/releases/supported/8.1.0/parrot-8.1.0.tar.bz2"
+    sha256 "caf356acab64f4ea50595a846808e81d0be8ada8267afbbeb66ddb3c93cb81d3"
+
+    # remove at 8.2.0, already in HEAD
+    patch do
+      url "https://github.com/parrot/parrot/commit/7524bf5384ddebbb3ba06a040f8acf972aa0a3ba.diff"
+      sha256 "170f63df33fa2dc870902bd703c371bb6d601b515618f5830ab921bffa22e87b"
+    end
+
+    # remove at 8.2.0, already in HEAD
+    patch do
+      url "https://github.com/parrot/parrot/commit/854aec65d6de8eaf5282995ab92100a2446f0cde.diff"
+      sha256 "dfe8b5e26b104f8fb2c1efe0a8316ffcba399463bd164c22e7cf2327fac2540e"
+    end
+  end
 
   bottle do
-    sha1 "8cadb0beb3984785d995a64847ed78b279798cee" => :yosemite
-    sha1 "da39dec1f80b1fa5192ed3b72ca53b7333e8ca3b" => :mavericks
-    sha1 "d09c985f1f51ecf6bed935da78311cb650b23ba7" => :mountain_lion
+    sha256 "3b78be029276ca642cb2bc705888ed0cd7745c0398cf90bf67031190191c76a8" => :el_capitan
+    sha256 "37a9ad2396bcf355d6d7ae2d432489e316d3290528947a6f1a30e753fed59902" => :yosemite
+    sha256 "ff4125f633f43c19134e2520c0964025f4ea14efd5ce826d0cd905c550fbb24a" => :mavericks
   end
 
   conflicts_with "rakudo-star"

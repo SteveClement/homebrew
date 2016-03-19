@@ -1,15 +1,15 @@
 class Flow < Formula
   desc "Static type checker for JavaScript"
   homepage "http://flowtype.org/"
-  url "https://github.com/facebook/flow/archive/v0.18.1.tar.gz"
-  sha256 "6634a92cfe75d344060d856b4de69d345aa9fde1b39a1f7988e74e59e1d6b9e8"
+  url "https://github.com/facebook/flow/archive/v0.22.1.tar.gz"
+  sha256 "3ace90c42d82e7e32719b764d94e0bccb24620a22761a6f3ff7f3b28f2f37186"
   head "https://github.com/facebook/flow.git"
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "e80b9010d380c905fdcb4f105c7e48929a9299ce5c8f23fe272dfeabb65749ca" => :el_capitan
-    sha256 "de205376d6bc7bf6244ff40bbc8687964e46a30ec7954da69a65bfbe524bede7" => :yosemite
-    sha256 "21b45ba6e461ef0a79215959b81dcc58db1635963dad09e533b29ea20c963746" => :mavericks
+    sha256 "49d422ce5c8d07f42dfcf5bb56757c511f9ac2ad3544f297d7ea011decef92a4" => :el_capitan
+    sha256 "120011882ca47af5ca40fba9fe0659116815c5781306bbb8e8f36140ad4ca77f" => :yosemite
+    sha256 "6f587c4ff72214f84ae803bef00f02b0f29d3325b444e38a1731440db6810478" => :mavericks
   end
 
   depends_on "ocaml" => :build
@@ -23,7 +23,7 @@ class Flow < Formula
   end
 
   test do
-    system "#{bin}/flow init #{testpath}"
+    system "#{bin}/flow", "init", testpath
     (testpath/"test.js").write <<-EOS.undent
       /* @flow */
       var x: string = 123;

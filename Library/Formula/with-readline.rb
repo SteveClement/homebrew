@@ -6,14 +6,15 @@ class WithReadline < Formula
 
   bottle do
     cellar :any
-    sha1 "465e7ae270b503a83bbdfc04703fea2a293d67f1" => :yosemite
-    sha1 "4d93c4c6724fb8f2fa97db8f292b87727b62b7aa" => :mavericks
-    sha1 "ad1b2fa7bf448e4fad18f93dc23e43521dce1857" => :mountain_lion
+    revision 1
+    sha256 "848877aac84004600d25c5b0ae87c12c2165a8fbc4c31c75bb82c225e5b4a833" => :el_capitan
+    sha256 "b597b2c5fdebc55699be29bb356926244bd8f7ea9c7eca02ba0ca41c319c70de" => :yosemite
+    sha256 "81fe9d0d8e723821ee68a47110ace135b6d865756f00364f758f6ac0d03eb1f2" => :mavericks
   end
 
-  depends_on "readline"
-
   option :universal
+
+  depends_on "readline"
 
   def install
     system "./configure", "--disable-debug",
@@ -23,6 +24,6 @@ class WithReadline < Formula
   end
 
   test do
-    system "echo 'exit' | #{bin}/with-readline /usr/bin/expect"
+    pipe_output("#{bin}/with-readline /usr/bin/expect", "exit", 0)
   end
 end

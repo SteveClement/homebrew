@@ -5,30 +5,22 @@ class HighlightingKate < Formula
 
   desc "Haskell syntax highlighting library, based on the Kate editor"
   homepage "https://github.com/jgm/highlighting-kate"
-  url "https://hackage.haskell.org/package/highlighting-kate-0.5.15/highlighting-kate-0.5.15.tar.gz"
-  sha256 "e4e52471dcef0771109d1f748ca9989a32eac8a31971b7e09e1c81c6cef7e945"
+  url "https://hackage.haskell.org/package/highlighting-kate-0.6.2/highlighting-kate-0.6.2.tar.gz"
+  sha256 "728f10ccba6dfa1604398ae527520d2debeef870472fe104c2bf0714c513b411"
 
   head "https://github.com/jgm/highlighting-kate.git"
 
-  revision 1
-
   bottle do
-    sha256 "db7a73bbcb74eb2d4842fdcf0a45d2622b55f5e8253002fcebbc72ffd9802418" => :yosemite
-    sha256 "2399e5d788f4a5df5cb982391469a1ce098a2949e07edefd6360b6ebdae86ad9" => :mavericks
-    sha256 "92acb3a9ceca6de37a683647f0fa16e2d2ffa2e2910bb6bdcb99afc91f589f42" => :mountain_lion
+    sha256 "cc5f019b34a5838ef52928bbf30e42191c96ed1e1e602193e6b71cc8ddf2d5f7" => :el_capitan
+    sha256 "99f8faf09ffb0852acc90e5e1f1bfbf6ec21e09fd2b1da748fd25dd960666f6d" => :yosemite
+    sha256 "be3f9ad7b797304a0403bf168f4a2519c44c8a790731004ab5c6862615f90fee" => :mavericks
   end
 
   depends_on "ghc" => :build
   depends_on "cabal-install" => :build
 
-  setup_ghc_compilers
-
   def install
-    cabal_sandbox do
-      cabal_install "--only-dependencies"
-      cabal_install "--prefix=#{prefix}", "-fexecutable"
-    end
-    cabal_clean_lib
+    install_cabal_package "-f executable"
   end
 
   test do

@@ -1,14 +1,14 @@
 class Yank < Formula
   desc "Yank terminal output to clipboard"
   homepage "https://github.com/mptre/yank"
-  url "https://github.com/mptre/yank/archive/v0.4.1.tar.gz"
-  sha256 "cbd6b3c9d580fa619f3cba2c53b18d26674d587333976fe75b402f76ea01c4e5"
+  url "https://github.com/mptre/yank/archive/v0.6.4.tar.gz"
+  sha256 "4794bd1e5eba2358b63253e750c547a2791e663105d91b18cd4818e0a534e75f"
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "310f46a6d042d720424fcb43e40cc71aaa2c4d10f9e221f8229fb68da20939f9" => :el_capitan
-    sha256 "2f820af12a2af1495f42b92f43f60fbfe25e77740d83f98fe5a3c182afb33a91" => :yosemite
-    sha256 "02b0f0c04a68d1875b39a8651520b23fa762705f24e2302b4bfa6f72603e93ad" => :mavericks
+    sha256 "fdfd02eed19486e67fc61c91d7ecb5c0886aaa4fa84fb567986688f3fec061ab" => :el_capitan
+    sha256 "eedc2cfbfce32218d9448600afe50043dcb7d5264e2fe97463b19dd3b03c27ef" => :yosemite
+    sha256 "d3b4110d3c3a5f0d8d700beae731e4aa27114282dc786c1763a21bc0ccfada61" => :mavericks
   end
 
   def install

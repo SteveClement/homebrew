@@ -1,25 +1,25 @@
 class Git < Formula
   desc "Distributed revision control system"
   homepage "https://git-scm.com"
-  url "https://www.kernel.org/pub/software/scm/git/git-2.6.3.tar.xz"
-  sha256 "d697e4d3d76830996c05bfc2a1d88aa726415b276a884a40d137575e5d597da3"
+  url "https://www.kernel.org/pub/software/scm/git/git-2.7.4.tar.xz"
+  sha256 "dee574defbe05ec7356a0842ddbda51315926f2fa7e39c2539f2c3dcc52e457b"
 
   head "https://github.com/git/git.git", :shallow => false
 
   bottle do
-    sha256 "f884dc64e12a7f782a4752f4b076534818e63cddcb52b9c6d0b1060c4632a9d3" => :el_capitan
-    sha256 "0b9ba281e569697de6f1f35bd49254868ed8e103c93081c8c3eab885fcba2057" => :yosemite
-    sha256 "6fb007eb5be93d766fe8d8a8ad3803a5699e79da158a87c71e38e33de841b5e4" => :mavericks
+    sha256 "047a329e05f45da7e4b0e974aefcc7b94006a206ef386b3fa213a31549a2e566" => :el_capitan
+    sha256 "c4083ad387b2e959de02ba63358d107bf3181f5672032e29a2ecfd0a5f0cedeb" => :yosemite
+    sha256 "d96b09c0638c2ae9e92a9bbcc7ef72084886bb7e46ebf004757c50b7cb1958ef" => :mavericks
   end
 
   resource "man" do
-    url "https://www.kernel.org/pub/software/scm/git/git-manpages-2.6.3.tar.xz"
-    sha256 "ae23f90a097437c896d6ab7becf597faa96ca8f0d1cd7efbcb1758ea2f59f2b4"
+    url "https://www.kernel.org/pub/software/scm/git/git-manpages-2.7.4.tar.xz"
+    sha256 "d04fd81ab8aa32efbe54acd27ab5c88ef4ab615313e4cdfa793dd0065899ce25"
   end
 
   resource "html" do
-    url "https://www.kernel.org/pub/software/scm/git/git-htmldocs-2.6.3.tar.xz"
-    sha256 "1e08dac903f06f9739e22ae700ff811c79bd7742775060d630c1e53236bbd9a0"
+    url "https://www.kernel.org/pub/software/scm/git/git-htmldocs-2.7.4.tar.xz"
+    sha256 "3fae21e2e68104621ea1405be73192b46bf3ef29bbc248a81b1e7e6fcf5acfad"
   end
 
   option "with-blk-sha1", "Compile with the block-optimized SHA1 implementation"
@@ -53,7 +53,10 @@ class Git < Formula
     perl_version = /\d\.\d+/.match(`perl --version`)
 
     if build.with? "brewed-svn"
-      ENV["PERLLIB_EXTRA"] = "#{Formula["subversion"].opt_prefix}/Library/Perl/#{perl_version}/darwin-thread-multi-2level"
+      ENV["PERLLIB_EXTRA"] = %W[
+        #{Formula["subversion"].opt_prefix}/lib/perl5/site_perl
+        #{Formula["subversion"].opt_prefix}/Library/Perl/#{perl_version}/darwin-thread-multi-2level
+      ].join(":")
     elsif MacOS.version >= :mavericks
       ENV["PERLLIB_EXTRA"] = %W[
         #{MacOS.active_developer_dir}
@@ -123,6 +126,7 @@ class Git < Formula
       cp "#{bash_completion}/git-completion.bash", zsh_completion
     end
 
+    elisp.install Dir["contrib/emacs/*.el"]
     (share+"git-core").install "contrib"
 
     # We could build the manpages ourselves, but the build process depends

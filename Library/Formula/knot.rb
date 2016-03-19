@@ -1,25 +1,22 @@
 class Knot < Formula
   desc "High-performance authoritative-only DNS server"
   homepage "https://www.knot-dns.cz/"
-  url "https://secure.nic.cz/files/knot-dns/knot-1.6.3.tar.xz"
-  mirror "http://http.debian.net/debian/pool/main/k/knot/knot_1.6.3.orig.tar.xz"
-  sha256 "48da608e29c2c1ef5937eb692f8ef0462ebb50fa7d128478a23e0a9788533e86"
+  url "https://secure.nic.cz/files/knot-dns/knot-2.1.1.tar.xz"
+  sha256 "e110d11d4a4c4b5abb091b32fcb073934fb840046e975234323e0fc15f2f8f5b"
 
-  head do
-    url "https://gitlab.labs.nic.cz/labs/knot.git"
-    depends_on "automake" => :build
-    depends_on "autoconf" => :build
-    depends_on "libtool" => :build
-    depends_on "pkg-config" => :build
-  end
+  head "https://gitlab.labs.nic.cz/labs/knot.git"
 
   bottle do
     cellar :any
-    sha256 "cb802cbc1c228a0acaffd49483c7a144eb223bd69955b610a18c5f77b567e988" => :yosemite
-    sha256 "e537709607541d660b68546fd28e06ec5b226b247f2b3e36ca8bb3645d3d1925" => :mavericks
-    sha256 "90dc89d5fb73b6675dfa808ad6d1a96a6bc26e9516009b4841d77ecc88ab5ea2" => :mountain_lion
+    sha256 "89f74b85b5a6f42a5051d279d087bf446b42c99ddd89bfd14154d431b3cc94bb" => :el_capitan
+    sha256 "f8377f2c37094fc446f167f954bfc0c3202e4d845317b0e7a140f455b9959f7a" => :yosemite
+    sha256 "8295bd95060e9f067613d3c9742d231b841694afdff96eae13f448e00f1a3d13" => :mavericks
   end
 
+  depends_on "automake" => :build
+  depends_on "autoconf" => :build
+  depends_on "libtool" => :build
+  depends_on "pkg-config" => :build
   depends_on "gnutls"
   depends_on "jansson"
   depends_on "libidn"
@@ -49,40 +46,25 @@ class Knot < Formula
   end
 
   def knot_conf; <<-EOS.undent
-    system {
-      identity on;
-      version on;
-      rundir "#{var}/knot";
-    }
-    interfaces {
-      all_ipv4 {
-        address 0.0.0.0;
-        port 53;
-      }
-      all_ipv6 {
-        address [::];
-        port 53;
-      }
-    }
-    control {
-      listen-on "knot.sock";
-    }
-    zones {
-      storage "#{var}/knot";
-    #  example.com {
-    #    file "#{var}/knot/example.com.zone";
-    #  }
-    }
-    log {
-      syslog {
-        any error;
-        zone warning, notice;
-        server info;
-      }
-      stderr {
-        any error, warning;
-      }
-    }
+    server:
+      rundir: "#{var}/knot"
+      listen: [ "0.0.0.0@53", "::@53" ]
+
+    log:
+      - target: "stderr"
+        any: "error"
+
+      - target: "syslog"
+        server: "info"
+        zone: "warning"
+        any: "error"
+
+    control:
+      listen: "knot.sock"
+
+    template:
+      - id: "default"
+        storage: "#{var}/knot"
     EOS
   end
 

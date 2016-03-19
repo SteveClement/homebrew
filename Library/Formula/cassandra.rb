@@ -1,15 +1,15 @@
 class Cassandra < Formula
   desc "Eventually consistent, distributed key-value store"
   homepage "https://cassandra.apache.org"
-  url "https://www.apache.org/dyn/closer.cgi?path=/cassandra/2.2.2/apache-cassandra-2.2.2-bin.tar.gz"
-  mirror "https://archive.apache.org/dist/cassandra/2.2.2/apache-cassandra-2.2.2-bin.tar.gz"
-  sha256 "72faa82f1dadd40984e732918d069a55b79adf5e4ccd23d2651cbd20b0a34e80"
+  url "https://www.apache.org/dyn/closer.cgi?path=/cassandra/3.3/apache-cassandra-3.3-bin.tar.gz"
+  mirror "https://archive.apache.org/dist/cassandra/3.3/apache-cassandra-3.3-bin.tar.gz"
+  sha256 "d98e685857d80f9eb93529f7b4f0f2c369ef40974866c8f8ad8edd3d6e0bf7e3"
+  revision 1
 
   bottle do
-    revision 1
-    sha256 "d6119d0ed97cf13a669bd9320e02457b210529d3738597254a8e56756b1e7484" => :el_capitan
-    sha256 "13b5bea82ee66a4ab14ca0c9a74acc6573171c724bff52c0606ffe0e4d04bca6" => :yosemite
-    sha256 "67fbda0d172bfc35da1da4d50cf633f14ad39f1c2ad5d56b7d68145d271d6ac5" => :mavericks
+    sha256 "ab54a208389af7deeeec5bc293a606f957b8f8d17e389f334f40e4a2bb661f75" => :el_capitan
+    sha256 "b77535cee4b8056430b9c48e84c4fbeb20fe6fec2100978e33e7b673c4086727" => :yosemite
+    sha256 "a4609d78fb13f2b2d370f12f2a1c2c03cf96ab26d70f3f922acf88ec25021ba9" => :mavericks
   end
 
   depends_on :python if MacOS.version <= :snow_leopard
@@ -41,8 +41,8 @@ class Cassandra < Formula
   end
 
   resource "cassandra-driver" do
-    url "https://pypi.python.org/packages/source/c/cassandra-driver/cassandra-driver-2.6.0.tar.gz"
-    sha256 "753505a02b4c6f9b5ef18dec36a13f17fb458c98925eea62c94a8839d5949717"
+    url "https://pypi.python.org/packages/source/c/cassandra-driver/cassandra-driver-3.0.0.tar.gz"
+    sha256 "b84e3a0716564f1f6a0deba120308d801f0232010d9c2df90579de293e59fa78"
   end
 
   def install
@@ -87,6 +87,35 @@ class Cassandra < Formula
               %r{`dirname "?\$0"?`/cassandra.in.sh},
               "#{share}/cassandra.in.sh"
 
+    # Make sure tools are installed
+    rm Dir[buildpath/"tools/bin/*.bat"] # Delete before install to avoid copying useless files
+    (libexec/"tools").install Dir[buildpath/"tools/lib/*.jar"]
+
+    # Tools use different cassandra.in.sh and should be changed differently
+    mv buildpath/"tools/bin/cassandra.in.sh", buildpath/"tools/bin/cassandra-tools.in.sh"
+    inreplace buildpath/"tools/bin/cassandra-tools.in.sh" do |s|
+      # Tools have slightly different path to CASSANDRA_HOME
+      s.gsub! "CASSANDRA_HOME=\"`dirname $0`/../..\"", "CASSANDRA_HOME=\"#{libexec}\""
+      # Store configs in etc, outside of keg
+      s.gsub! "CASSANDRA_CONF=\"$CASSANDRA_HOME/conf\"", "CASSANDRA_CONF=\"#{etc}/cassandra\""
+      # Core Jars installed to prefix, no longer in a lib folder
+      s.gsub! "\"$CASSANDRA_HOME\"/lib/*.jar", "\"$CASSANDRA_HOME\"/*.jar"
+      # Tools Jars are under tools folder
+      s.gsub! "\"$CASSANDRA_HOME\"/tools/lib/*.jar", "\"$CASSANDRA_HOME\"/tools/*.jar"
+      # Storage path
+      s.gsub! "cassandra_storagedir\=\"$CASSANDRA_HOME/data\"", "cassandra_storagedir\=\"#{var}/lib/cassandra\""
+    end
+
+    share.install [buildpath/"tools/bin/cassandra-tools.in.sh"]
+
+    # Update tools script files
+    inreplace Dir[buildpath/"tools/bin/*"],
+              "`dirname \"$0\"`/cassandra.in.sh",
+              "#{share}/cassandra-tools.in.sh"
+
+    # Make sure tools are available
+    bin.install Dir[buildpath/"tools/bin/*"]
+
     bin.write_exec_script Dir["#{libexec}/bin/*"]
     rm bin/"cqlsh" # Remove existing exec script
     (bin/"cqlsh").write_env_script libexec/"bin/cqlsh", :PYTHONPATH => pypath
@@ -113,5 +142,12 @@ class Cassandra < Formula
       </dict>
     </plist>
     EOS
+  end
+
+  test do
+    system "#{bin}/cassandra", "-v"
+    system "#{bin}/cassandra-stressd", "-v"
+    system "#{bin}/sstablesplit", "-h"
+    system "#{bin}/nodetool", "help"
   end
 end

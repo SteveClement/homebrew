@@ -1,16 +1,14 @@
 class Autogen < Formula
   desc "Automated text file generator"
   homepage "http://autogen.sourceforge.net"
-  url "http://ftpmirror.gnu.org/autogen/rel5.18.4/autogen-5.18.4.tar.xz"
-  mirror "https://ftp.gnu.org/gnu/autogen/rel5.18.4/autogen-5.18.4.tar.xz"
-  sha256 "7fbaff0c25035aee5b96913de2c83d9a5cc973b8dc08d6b7489ecbcfd72eb84b"
+  url "http://ftpmirror.gnu.org/autogen/autogen-5.18.7.tar.xz"
+  mirror "https://ftp.gnu.org/gnu/autogen/autogen-5.18.7.tar.xz"
+  sha256 "a7a580a5e18931cb341b255cec2fee2dfd81bea5ddbf0d8ad722703e19aaa405"
 
   bottle do
-    revision 1
-    sha256 "351cd4892f35d90e5a1b0eb4be71bb6126d602232447e4515d4891f82fbb14d5" => :el_capitan
-    sha1 "caa1ffc8b0b5403586694ca15846145e731b935d" => :yosemite
-    sha1 "def1fe9af81c138662c763b2527aed3f19e24f56" => :mavericks
-    sha1 "c7507958613ed6dc9027037d34b117c806867434" => :mountain_lion
+    sha256 "319d4d6c54c3025e590d15553c86ffbe5c2db1c2d7946d5cd8fb4a02786adc27" => :el_capitan
+    sha256 "5805b867cab218e2a1a933f646344cec285d883c5c6c9f04dfb90795e21a7dcc" => :yosemite
+    sha256 "7a00b94115673c045497246de4f1e5b90cb636ae10fa3aea1409f7e4be52c2dc" => :mavericks
   end
 
   depends_on "pkg-config" => :build

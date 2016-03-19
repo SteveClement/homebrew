@@ -8,7 +8,7 @@
 # the mutt community maintain a more comprehesive tap with better
 # support for patches.
 
-class MuttPatched < Formula
+class Mutt < Formula
   desc "Mongrel of mail user agents (part elm, pine, mush, mh, etc.)"
   homepage "http://www.mutt.org/"
   url "https://bitbucket.org/mutt/mutt/downloads/mutt-1.5.24.tar.gz"
@@ -16,17 +16,17 @@ class MuttPatched < Formula
   sha256 "a292ca765ed7b19db4ac495938a3ef808a16193b7d623d65562bb8feb2b42200"
 
   bottle do
-    revision 1
-    sha256 "a5e74878cf5660dc32b93a7580f1e449a163dec163e1c5eaf2b8db1f2582e7ba" => :el_capitan
-    sha256 "bc2e5da8f4488a9e6e9f89d716abf0fd2050d80c64b6748fb9f3b751d13e4473" => :yosemite
-    sha256 "22da691ae8ed70425a9b2f3027652320b6484a8ec65a9efbc7710286d3d9c666" => :mavericks
+    revision 2
+    sha256 "5bb0c9590b522bbcc38bfecaf0561810db2660792f472aa12a3b6c8f5e5b28d7" => :el_capitan
+    sha256 "8cad91b87b615984871b6bed35a029edcef006666bc7cf3b8f6b8b74d91c5b97" => :yosemite
+    sha256 "c57d868588eb947002902c90ee68af78298cbb09987e0150c1eea73f9e574cce" => :mavericks
   end
 
   head do
-    url "http://dev.mutt.org/hg/mutt#default", :using => :hg
+    url "https://dev.mutt.org/hg/mutt#default", :using => :hg
 
     resource "html" do
-      url "http://dev.mutt.org/doc/manual.html", :using => :nounzip
+      url "https://dev.mutt.org/doc/manual.html", :using => :nounzip
     end
   end
 
@@ -39,26 +39,19 @@ class MuttPatched < Formula
     :because => "both install mmdf.5 and mbox.5 man pages"
 
   option "with-debug", "Build with debug option enabled"
-  option "with-sidebar-patch", "Build with sidebar patch"
-  option "with-trash-patch", "Apply trash folder patch"
   option "with-s-lang", "Build against slang instead of ncurses"
   option "with-ignore-thread-patch", "Apply ignore-thread patch"
-  option "with-pgp-verbose-mime-patch", "Apply PGP verbose mime patch"
-  option "with-pgp-multiple-crypt-hook-patch", "Apply PGP multiple-crypt-hook patch"
-  option "with-pgp-combined-crypt-hook-patch", "Apply PGP combined-crypt-hook patch"
   option "with-confirm-attachment-patch", "Apply confirm attachment patch"
 
-  depends_on "openssl"
-  depends_on "tokyo-cabinet"
-  depends_on "s-lang" => :optional
-  depends_on "gpgme" => :optional
   depends_on "autoconf" => :build
   depends_on "automake" => :build
 
-  patch do
-    url "http://localhost.lu/mutt/patches/trash-folder"
-    sha1 "6c8ce66021d89a063e67975a3730215c20cf2859"
-  end if build.with? "trash-patch"
+  depends_on "openssl"
+  depends_on "tokyo-cabinet"
+  depends_on "gettext" => :optional
+  depends_on "gpgme" => :optional
+  depends_on "libidn" => :optional
+  depends_on "s-lang" => :optional
 
   # original source for this went missing, patch sourced from Arch at
   # https://aur.archlinux.org/packages/mutt-ignore-thread/
@@ -69,32 +62,12 @@ class MuttPatched < Formula
     end
   end
 
-  patch do
-    url "http://localhost.lu/mutt/patches/patch-1.5.23.sc.multiple-crypt-hook.1"
-    sha1 "697aae4e643f1e8f50c27b894ee6bfaab38d3119"
-  end if build.with? "pgp-multiple-crypt-hook-patch"
-
-  patch do
-    url "http://localhost.lu/mutt/patches/patch-1.5.23.sc.crypt-combined.1"
-    sha1 "2a12fe0a071e8cf7fe6f29336c6dadbccf95cdea"
-  end if build.with? "pgp-combined-crypt-hook-patch"
-
-  patch do
-    url "https://gist.githubusercontent.com/tlvince/5741641/raw/c926ca307dc97727c2bd88a84dcb0d7ac3bb4bf5/mutt-attach.patch"
-    sha1 "94da52d50508d8951aa78ca4b073023414866be1"
-  end if build.with? "confirm-attachment-patch"
-
   if build.with? "confirm-attachment-patch"
     patch do
       url "https://gist.githubusercontent.com/tlvince/5741641/raw/c926ca307dc97727c2bd88a84dcb0d7ac3bb4bf5/mutt-attach.patch"
       sha256 "da2c9e54a5426019b84837faef18cc51e174108f07dc7ec15968ca732880cb14"
     end
   end
-
-  patch do
-    url "https://raw.github.com/nedos/mutt-sidebar-patch/master/mutt-sidebar.patch"
-    sha1 "1e151d4ff3ce83d635cf794acf0c781e1b748ff1"
-  end if build.with? "sidebar-patch"
 
   def install
     user_admin = Etc.getgrnam("admin").mem.include?(ENV["USER"])
@@ -118,8 +91,9 @@ class MuttPatched < Formula
     # we're running as an unprivileged user)
     args << "--with-homespool=.mbox" unless user_admin
 
-    args << "--with-slang" if build.with? "s-lang"
+    args << "--disable-nls" if build.without? "gettext"
     args << "--enable-gpgme" if build.with? "gpgme"
+    args << "--with-slang" if build.with? "s-lang"
 
     if build.with? "debug"
       args << "--enable-debug"

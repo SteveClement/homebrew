@@ -1,15 +1,16 @@
 class ArgyllCms < Formula
   desc "ICC compatible color management system"
   homepage "http://www.argyllcms.com/"
-  url "http://www.argyllcms.com/Argyll_V1.8.2_src.zip"
-  version "1.8.2"
-  sha256 "59bdfaeace35d2007c90fc53234ba33bf8a64cffc08f7b27a297fc5f85455377"
+  url "http://www.argyllcms.com/Argyll_V1.8.3_src.zip"
+  version "1.8.3"
+  sha256 "60494176785f6c2e4e4daefb9452d83859880449040b2a843ed81de3bd0c558e"
 
   bottle do
     cellar :any
-    sha256 "ef22744d8bc625c0add4604e2cfbf4fec94734d8abe1382812099ec85353dc0d" => :el_capitan
-    sha256 "9988670d522fba259ab47efe710987fec598e208c6255b489a5cbc7ac40681a3" => :yosemite
-    sha256 "924c116ab58fc4267d9e8059e22d337c32e47535bba7648360c9dbaaa7a6c1ea" => :mavericks
+    revision 1
+    sha256 "4598c3c991524acfb49162ec6d7e28bba2e10e07c7a1515ea43da30d66eb3cc7" => :el_capitan
+    sha256 "149da3dc3ff1634c599cafbc5e3bdc0610dbe01ccda97b191c6eca4bf9059987" => :yosemite
+    sha256 "bfacf495413da04c187e2c40049b9a0d77f09df34dee8820a67624d449276b52" => :mavericks
   end
 
   depends_on "jam" => :build
@@ -17,6 +18,10 @@ class ArgyllCms < Formula
   depends_on "libtiff"
 
   conflicts_with "num-utils", :because => "both install `average` binaries"
+
+  # Fix build on case-sensitive filesystems.
+  # Submitted to graeme@argyllcms.com on 23rd Feb 2016.
+  patch :DATA
 
   def install
     system "sh", "makeall.sh"
@@ -31,3 +36,18 @@ class ArgyllCms < Formula
     %w[test.ti1.ps test.ti1.ti1 test.ti1.ti2].each { |f| File.exist? f }
   end
 end
+
+__END__
+diff --git a/spectro/dispwin.c b/spectro/dispwin.c
+index fffbaee..18343db 100755
+--- a/spectro/dispwin.c
++++ b/spectro/dispwin.c
+@@ -113,7 +113,7 @@ typedef float CGFloat;
+ #endif
+ #endif	/* !NSINTEGER_DEFINED */
+
+-#include <IOKit/Graphics/IOGraphicsLib.h>
++#include <IOKit/graphics/IOGraphicsLib.h>
+
+ #if __MAC_OS_X_VERSION_MAX_ALLOWED <= 1060
+ /* This wasn't declared in 10.6, although it is needed */

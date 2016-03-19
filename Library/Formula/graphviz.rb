@@ -2,7 +2,16 @@ class Graphviz < Formula
   desc "Graph visualization software from AT&T and Bell Labs"
   homepage "http://graphviz.org/"
   url "http://graphviz.org/pub/graphviz/stable/SOURCES/graphviz-2.38.0.tar.gz"
+  mirror "https://mirrors.ocf.berkeley.edu/debian/pool/main/g/graphviz/graphviz_2.38.0.orig.tar.gz"
   sha256 "81aa238d9d4a010afa73a9d2a704fc3221c731e1e06577c2ab3496bdef67859e"
+
+  bottle do
+    revision 1
+    sha256 "cf69eac548a5c02aacc966706fc4a922176059414fbe453680aae4552fc019dc" => :el_capitan
+    sha256 "6817a366691db684f2910dfbc7e20253915f82848ae09ef474a50ac67bf10582" => :yosemite
+    sha256 "4361c01b46dc6061694e5f5a58c326efedad66ddeb7e1b063e53ff5ebb995d8a" => :mavericks
+    sha256 "a8d9c8d59af854970bfffa16dc62cb584383887053a4ded39cfbbfdabac624bc" => :mountain_lion
+  end
 
   head do
     url "https://github.com/ellson/graphviz.git"
@@ -12,15 +21,7 @@ class Graphviz < Formula
     depends_on "libtool" => :build
   end
 
-  bottle do
-    revision 1
-    sha256 "cf69eac548a5c02aacc966706fc4a922176059414fbe453680aae4552fc019dc" => :el_capitan
-    sha1 "a3461628baba501e16c63ceaa0414027f7e26c7f" => :yosemite
-    sha1 "dc7f915d199931a49fb2a8eb623b329fed6c619c" => :mavericks
-    sha1 "ec730f7cdd3e9549610960ecab86dac349e2f8ea" => :mountain_lion
-  end
-
-  # To find Ruby and Co.
+  # https://github.com/Homebrew/homebrew/issues/14566
   env :std
 
   option :universal
@@ -87,7 +88,8 @@ class Graphviz < Formula
 
     if build.with? "app"
       cd "macosx" do
-        xcodebuild "-configuration", "Release", "SYMROOT=build", "PREFIX=#{prefix}", "ONLY_ACTIVE_ARCH=YES"
+        xcodebuild "-configuration", "Release", "SYMROOT=build", "PREFIX=#{prefix}",
+                   "ONLY_ACTIVE_ARCH=YES", "MACOSX_DEPLOYMENT_TARGET=#{MacOS.version}"
       end
       prefix.install "macosx/build/Release/Graphviz.app"
     end

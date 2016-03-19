@@ -1,18 +1,19 @@
 class Postgis < Formula
   desc "Adds support for geographic objects to PostgreSQL"
   homepage "http://postgis.net"
-  url "http://download.osgeo.org/postgis/source/postgis-2.2.0.tar.gz"
-  sha256 "66f0f8480d535959b8bb9abb5ee5d602d1001413ca770df120baf3de627f9e91"
+  url "http://download.osgeo.org/postgis/source/postgis-2.2.1.tar.gz"
+  sha256 "0fe500b0250203aac656bfa8f42f8458b63f33258404844e066e0e535988fa09"
 
   bottle do
     cellar :any
-    sha256 "121d6cbcbbf7d7653846f13f63adca1f9b01752c1d477dac6bfb36251c8a0551" => :el_capitan
-    sha256 "aab5c63fcb2bc4af2a43fae5706bcd84dc9c3b2d2a77f8890a0b61934b83ba2f" => :yosemite
-    sha256 "56d60773f2110a91511c893829d467e311fc629f7dacf3f9d528c4d0f21d641b" => :mavericks
+    revision 2
+    sha256 "2dd01d3e7b0a5a8c7b69bdbd8389ab8d857de755e393e213dc818828fb0dd540" => :el_capitan
+    sha256 "6aed14810aea9784c4dc2a00ec825bb6032f200e7512c9611a41a82fba1e6d55" => :yosemite
+    sha256 "2d4df95d9aa6609d8bf7409be18a4173b7ba7d364a3df1e0a8445d330ae8fbb2" => :mavericks
   end
 
   head do
-    url "http://svn.osgeo.org/postgis/trunk/"
+    url "https://svn.osgeo.org/postgis/trunk/"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
@@ -35,6 +36,7 @@ class Postgis < Formula
   # For GeoJSON and raster handling
   depends_on "json-c"
   depends_on "gdal" => :recommended
+  depends_on "pcre" => :build if build.with? "gdal"
 
   # For advanced 2D/3D functions
   depends_on "sfcgal" => :recommended
@@ -60,7 +62,7 @@ class Postgis < Formula
       # PostGIS gets all of its compiler flags from the PGXS makefiles. This
       # makes it nigh impossible to tell the buildsystem where our keg-only
       # gettext installations are.
-      "--disable-nls"
+      "--disable-nls",
     ]
 
     args << "--with-gui" if build.with? "gui"
@@ -92,9 +94,9 @@ class Postgis < Formula
     bin.install Dir["stage/**/bin/*"]
     lib.install Dir["stage/**/lib/*"]
     include.install Dir["stage/**/include/*"]
-    (doc/"postgresql/extentsion").install Dir["stage/**/share/doc/postgresql/extension/*"]
+    (doc/"postgresql/extension").install Dir["stage/**/share/doc/postgresql/extension/*"]
     (share/"postgresql/extension").install Dir["stage/**/share/postgresql/extension/*"]
-    (share/"postgis").install Dir["stage/**/contrib/postgis-*/*"]
+    pkgshare.install Dir["stage/**/contrib/postgis-*/*"]
     (share/"postgis_topology").install Dir["stage/**/contrib/postgis_topology-*/*"]
 
     # Extension scripts
@@ -115,14 +117,14 @@ class Postgis < Formula
   def caveats
     <<-EOS.undent
       To create a spatially-enabled database, see the documentation:
-        http://postgis.net/docs/manual-2.1/postgis_installation.html#create_new_db_extensions
+        http://postgis.net/docs/manual-2.2/postgis_installation.html#create_new_db_extensions
       If you are currently using PostGIS 2.0+, you can go the soft upgrade path:
         ALTER EXTENSION postgis UPDATE TO "#{version}";
       Users of 1.5 and below will need to go the hard-upgrade path, see here:
-        http://postgis.net/docs/manual-2.1/postgis_installation.html#upgrading
+        http://postgis.net/docs/manual-2.2/postgis_installation.html#upgrading
 
       PostGIS SQL scripts installed to:
-        #{HOMEBREW_PREFIX}/share/postgis
+        #{opt_pkgshare}
       PostGIS plugin libraries installed to:
         #{HOMEBREW_PREFIX}/lib
       PostGIS extension modules installed to:

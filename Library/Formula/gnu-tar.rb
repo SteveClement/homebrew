@@ -5,15 +5,14 @@ class GnuTar < Formula
   mirror "https://ftp.gnu.org/gnu/tar/tar-1.28.tar.gz"
   sha256 "6a6b65bac00a127a508533c604d5bf1a3d40f82707d56f20cefd38a05e8237de"
 
-  option "with-default-names", "Do not prepend 'g' to the binary"
-
   bottle do
-    revision 2
-    sha256 "ec164a19cec89dd5fcec0fd1cc25f78d33b73bdf6d149bae586fa398d89fa2e9" => :el_capitan
-    sha1 "bc61f3210e6f8adaade8abe7e8bed4542ead62e2" => :yosemite
-    sha1 "01e82dddbbadb8a40af90f1f844cce3684a19399" => :mavericks
-    sha1 "63268147e47588ccbb33be80e3484611bfacc2f4" => :mountain_lion
+    revision 4
+    sha256 "006f9aba7b70361c01666a0775027457265646bdd4d05a4c6fc1b0d9268af8a8" => :el_capitan
+    sha256 "7a32439d8e25984e4737ab74e1ee15a03f0cfc1455f9940f98beafe8609d97e8" => :yosemite
+    sha256 "b51eee5840990c2fc46ea887d9efd9c06fd92946bd39b8e4c124c4da40873be3" => :mavericks
   end
+
+  option "with-default-names", "Do not prepend 'g' to the binary"
 
   # Fix for xattrs bug causing build failures on OS X:
   # https://lists.gnu.org/archive/html/bug-tar/2014-08/msg00001.html
@@ -23,6 +22,16 @@ class GnuTar < Formula
   end
 
   def install
+    # Work around unremovable, nested dirs bug that affects lots of
+    # GNU projects. See:
+    # https://github.com/Homebrew/homebrew/issues/45273
+    # https://github.com/Homebrew/homebrew/issues/44993
+    # This is thought to be an el_capitan bug:
+    # http://lists.gnu.org/archive/html/bug-tar/2015-10/msg00017.html
+    if MacOS.version == :el_capitan
+      ENV["gl_cv_func_getcwd_abort_bug"] = "no"
+    end
+
     args = ["--prefix=#{prefix}", "--mandir=#{man}"]
     args << "--program-prefix=g" if build.without? "default-names"
 
@@ -30,7 +39,10 @@ class GnuTar < Formula
     system "make", "install"
 
     # Symlink the executable into libexec/gnubin as "tar"
-    (libexec/"gnubin").install_symlink bin/"gtar" => "tar" if build.without? "default-names"
+    if build.without? "default-names"
+      (libexec/"gnubin").install_symlink bin/"gtar" =>"tar"
+      (libexec/"gnuman/man1").install_symlink man1/"gtar.1" => "tar.1"
+    end
   end
 
   def caveats
@@ -41,6 +53,12 @@ class GnuTar < Formula
       to your PATH from your bashrc like:
 
           PATH="#{opt_libexec}/gnubin:$PATH"
+
+      Additionally, you can access their man pages with normal names if you add
+      the "gnuman" directory to your MANPATH from your bashrc as well:
+
+          MANPATH="#{opt_libexec}/gnuman:$MANPATH"
+
       EOS
     end
   end

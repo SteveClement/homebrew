@@ -1,34 +1,34 @@
 class CrystalLang < Formula
   desc "Fast and statically typed, compiled language with Ruby-like syntax"
   homepage "http://crystal-lang.org/"
-  url "https://github.com/manastech/crystal/archive/0.9.1.tar.gz"
-  sha256 "b6e04c9ec5f4bb2235211c635eb7da7522113cd0f4c3410cdd07bb3ae0de0c38"
+  url "https://github.com/crystal-lang/crystal/archive/0.13.0.tar.gz"
+  sha256 "abada1d7bd411dca52ac0df2124a188d61301bdcd1fc75e8419a24496ee8ff42"
   head "https://github.com/manastech/crystal.git"
 
   bottle do
-    sha256 "bda84aafa263a59ab7288ed1438a90202e7e30e7e50f97d90d35b78e45689cf1" => :el_capitan
-    sha256 "4273cdbffa3ca35891c196a2a618ddecba56638e9cde96312789d3454384aee0" => :yosemite
-    sha256 "6f5c16d445212da957f466be10b5d99bd9e8a5b5164c82e090e61d73d66ca15b" => :mavericks
-  end
-
-  resource "boot" do
-    url "https://github.com/manastech/crystal/releases/download/0.9.0/crystal-0.9.0-1-darwin-x86_64.tar.gz"
-    sha256 "fd670b01dfa35805c8c57126dabebfe25c0942b673d9b3c6d5116d8b3f5ba53a"
-  end
-
-  resource "shards" do
-    url "https://github.com/ysbaddaden/shards/archive/v0.5.3.tar.gz"
-    sha256 "33a42709dc7f69b892f551b6a2d44b49d9d75b6e54e186fcb7534c8485f90139"
+    sha256 "5c804b37df14fa4b4b93fb77be35f5f61a00610108095b3dbf37130bd1da3f22" => :el_capitan
+    sha256 "7e070984b439e4030afad28d42bd22b4842495e0def892eeeb87b724a24a3afe" => :yosemite
+    sha256 "aba8ac58c5f8c5afac22f579d33c006b6319967e3923c7fdce5c26d3ee5e40e0" => :mavericks
   end
 
   option "without-release", "Do not build the compiler in release mode"
   option "without-shards", "Do not include `shards` dependency manager"
 
   depends_on "libevent"
-  depends_on "libpcl"
   depends_on "bdw-gc"
   depends_on "llvm" => :build
   depends_on "libyaml" if build.with?("shards")
+
+  resource "boot" do
+    url "https://github.com/crystal-lang/crystal/releases/download/0.12.0/crystal-0.12.0-1-darwin-x86_64.tar.gz"
+    version "0.12.0"
+    sha256 "2481282c037d9b209ec44a98a01895c26c1f5eee33ad364d68bc15b834f63446"
+  end
+
+  resource "shards" do
+    url "https://github.com/ysbaddaden/shards/archive/v0.6.2.tar.gz"
+    sha256 "11d22086d736598efa87eea558e7b304d538372f017fce9bb21476e40c586110"
+  end
 
   def install
     (buildpath/"boot").install resource("boot")
@@ -45,7 +45,7 @@ class CrystalLang < Formula
     if build.with? "release"
       system "make", "crystal", "release=true"
     else
-      system "make", "llvm_ext"
+      system "make", "deps"
       (buildpath/".build").mkpath
       system "bin/crystal", "build", "-o", ".build/crystal", "src/compiler/crystal.cr"
     end
@@ -59,6 +59,8 @@ class CrystalLang < Formula
 
     bin.install ".build/crystal"
     prefix.install "src"
+    bash_completion.install "etc/completion.bash" => "crystal"
+    zsh_completion.install "etc/completion.zsh" => "crystal"
   end
 
   test do

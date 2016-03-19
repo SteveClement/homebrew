@@ -1,8 +1,8 @@
 class Nvm < Formula
   desc "Manage multiple Node.js versions"
   homepage "https://github.com/creationix/nvm"
-  url "https://github.com/creationix/nvm/archive/v0.29.0.tar.gz"
-  sha256 "04f6f2710bc3b3820cde1055e735a6cd8fa71a3c9c2881c49c8653e982e0d86a"
+  url "https://github.com/creationix/nvm/archive/v0.31.0.tar.gz"
+  sha256 "5f9bc1c89c70e852f6bc2688389e6b9822ad851250d25d0910d05fa88b842540"
   head "https://github.com/creationix/nvm.git"
 
   bottle :unneeded
@@ -25,7 +25,7 @@ class Nvm < Formula
     configuration file:
 
       export NVM_DIR=~/.nvm
-      source $(brew --prefix nvm)/nvm.sh
+      . $(brew --prefix nvm)/nvm.sh
 
     You can set $NVM_DIR to any location, but leaving it unchanged from
     #{prefix} will destroy any nvm-installed Node installations
@@ -36,9 +36,9 @@ class Nvm < Formula
   end
 
   test do
-    output = pipe_output("#{prefix}/nvm-exec 2>&1")
+    output = pipe_output("NODE_VERSION=homebrewtest #{prefix}/nvm-exec 2>&1")
     assert_no_match /No such file or directory/, output
     assert_no_match /nvm: command not found/, output
-    assert_match /Node Version Manager/, output
+    assert_match /N\/A: version \"homebrewtest\" is not yet installed/, output
   end
 end

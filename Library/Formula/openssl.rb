@@ -1,31 +1,44 @@
 class Openssl < Formula
-  desc "OpenSSL SSL/TLS cryptography library"
+  desc "SSL/TLS cryptography library"
   homepage "https://openssl.org/"
-  url "https://www.openssl.org/source/openssl-1.0.2d.tar.gz"
-  mirror "https://dl.bintray.com/homebrew/mirror/openssl-1.0.2d.tar.gz"
-  mirror "https://www.mirrorservice.org/sites/ftp.openssl.org/source/openssl-1.0.2d.tar.gz"
-  sha256 "671c36487785628a703374c652ad2cebea45fa920ae5681515df25d9f2c9a8c8"
-  revision 1
+  url "https://www.openssl.org/source/openssl-1.0.2g.tar.gz"
+  mirror "https://dl.bintray.com/homebrew/mirror/openssl-1.0.2g.tar.gz"
+  mirror "https://www.mirrorservice.org/sites/ftp.openssl.org/source/openssl-1.0.2g.tar.gz"
+  sha256 "b784b1b3907ce39abf4098702dade6365522a253ad1552e267a9a0e89594aa33"
 
   bottle do
-    sha256 "b0d8d2082ec30add6327f50ade554a9d45c09ef04b9086a4b779bb7d5816794b" => :el_capitan
-    sha256 "65de00409343fb371a065ae514da7a6cbf4f575dee9e0016bd22baccd5b644fa" => :yosemite
-    sha256 "ec0a2591aca21c855790464f691db864d5180cb8ae97c68429ca31560fd5fd29" => :mavericks
-    sha256 "cc001abc92c0991bef7817cd88c078f8110354d1529a194a4b2e16e5e09cbeca" => :mountain_lion
+    sha256 "b1de0682c7a838a75da3a06ddad2b9700d208b2faaaa1b51c0889ba403c7dd22" => :el_capitan
+    sha256 "68e5432c7b863341bc0c42c9a9391c11ba244519f110ba7c5ef4d97eb5c6b8fa" => :yosemite
+    sha256 "cdb9ddcc2bc683afa836b40258acbd40fa82dc67b68b245b7413d85e18d98ca0" => :mavericks
   end
-
-  option :universal
-  option "without-check", "Skip build-time tests (not recommended)"
-
-  depends_on "makedepend" => :build
 
   keg_only :provided_by_osx,
     "Apple has deprecated use of OpenSSL in favor of its own TLS and crypto libraries"
 
+  option :universal
+  option "without-test", "Skip build-time tests (not recommended)"
+
+  deprecated_option "without-check" => "without-test"
+
+  depends_on "makedepend" => :build
+
+  # Replace with upstream url if they merge the more robust fix
+  # https://github.com/openssl/openssl/pull/597
+  if MacOS.version <= :snow_leopard
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/patches/3f1dc8ea145a70543aded8101a0c725abf82fc45/openssl/revert-pass-pure-constants-verbatim.patch"
+      sha256 "e38f84181a56e70028ade8408ad70aaffaea386b7e1b35de55728ae878d544aa"
+    end
+    patch do
+      url "https://raw.githubusercontent.com/Homebrew/patches/3f1dc8ea145a70543aded8101a0c725abf82fc45/openssl/tshort-asm.patch"
+      sha256 "f161e2fc1395efcb53d785004d67d4962d28aa8ce282a91020f12809c03b2afd"
+    end
+  end
+
   def arch_args
     {
       :x86_64 => %w[darwin64-x86_64-cc enable-ec_nistp_64_gcc_128],
-      :i386   => %w[darwin-i386-cc]
+      :i386   => %w[darwin-i386-cc],
     }
   end
 
@@ -40,6 +53,14 @@ class Openssl < Formula
   end
 
   def install
+    # Load zlib from an explicit path instead of relying on dyld's fallback
+    # path, which is empty in a SIP context. This patch will be unnecessary
+    # when we begin building openssl with no-comp to disable TLS compression.
+    # https://langui.sh/2015/11/27/sip-and-dlopen
+    inreplace "crypto/comp/c_zlib.c",
+              'zlib_dso = DSO_load(NULL, "z", NULL, 0);',
+              'zlib_dso = DSO_load(NULL, "/usr/lib/libz.dylib", NULL, DSO_FLAG_NO_NAME_TRANSLATION);'
+
     if build.universal?
       ENV.permit_arch_flags
       archs = Hardware::CPU.universal_archs
@@ -65,11 +86,12 @@ class Openssl < Formula
       system "make", "depend"
       system "make"
 
-      if (MacOS.prefer_64_bit? || arch == MacOS.preferred_arch) && build.with?("check")
+      if (MacOS.prefer_64_bit? || arch == MacOS.preferred_arch) && build.with?("test")
         system "make", "test"
       end
 
       if build.universal?
+        cp "include/openssl/opensslconf.h", dir
         cp Dir["*.?.?.?.dylib", "*.a", "apps/openssl"], dir
         cp Dir["engines/**/*.dylib"], "#{dir}/engines"
       end
@@ -97,6 +119,15 @@ class Openssl < Formula
       system "lipo", "-create", "#{dirs.first}/openssl",
                                 "#{dirs.last}/openssl",
                      "-output", "#{bin}/openssl"
+
+      confs = archs.map do |arch|
+        <<-EOS.undent
+          #ifdef __#{arch}__
+          #{(buildpath/"build-#{arch}/opensslconf.h").read}
+          #endif
+          EOS
+      end
+      (include/"openssl/opensslconf.h").atomic_write confs.join("\n")
     end
   end
 
@@ -116,7 +147,7 @@ class Openssl < Formula
     )
 
     valid_certs = certs.select do |cert|
-      IO.popen("openssl x509 -inform pem -checkend 0 -noout", "w") do |openssl_io|
+      IO.popen("#{bin}/openssl x509 -inform pem -checkend 0 -noout", "w") do |openssl_io|
         openssl_io.write(cert)
         openssl_io.close_write
       end

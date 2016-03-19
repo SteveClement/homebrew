@@ -1,24 +1,16 @@
 class Gtkx < Formula
   desc "GUI toolkit"
   homepage "http://gtk.org/"
-  revision 3
 
   stable do
-    url "https://download.gnome.org/sources/gtk+/2.24/gtk+-2.24.28.tar.xz"
-    sha256 "b2c6441e98bc5232e5f9bba6965075dcf580a8726398f7374d39f90b88ed4656"
-
-    # Fix crash on OS X 10.11
-    # See: https://bugzilla.gnome.org/show_bug.cgi?id=753992
-    patch do
-      url "https://bug753992.bugzilla-attachments.gnome.org/attachment.cgi?id=312565"
-      sha256 "e2e8d5c236d4de7d5b5fd79a2e90861b281746132a3f96aca6ab0cb780926876"
-    end
+    url "https://download.gnome.org/sources/gtk+/2.24/gtk+-2.24.30.tar.xz"
+    sha256 "0d15cec3b6d55c60eac205b1f3ba81a1ed4eadd9d0f8e7c508bc7065d0c4ca50"
   end
 
   bottle do
-    sha256 "c50b23ea76ad0379e43a44ac2520e2243c5b2f2aded21c7e82c36c20e6a90e1a" => :el_capitan
-    sha256 "72a95671b8b9ba6aaf3e8900f4af6bd9b0b0fcdd6621a200838d3e2622bc7a26" => :yosemite
-    sha256 "0754d744caed63c14ce80b5c3895679d1b93dad9832ca6105488eefa809bb7c1" => :mavericks
+    sha256 "2fce410cbdf902f513030a18bc5002ec844bde1b115355e2a168ca2101cd6625" => :el_capitan
+    sha256 "3fe1d4c9e0de77d30e45c88d40de344d829c404abb2af06ef4ca6233f87f25e5" => :yosemite
+    sha256 "995560643ea4d66d24f8147361adf910be6504be8eb58a8c2411a06c17c19944" => :mavericks
   end
 
   head do
@@ -30,6 +22,7 @@ class Gtkx < Formula
     depends_on "gtk-doc" => :build
   end
 
+  option :universal
   option "with-quartz-relocation", "Build with quartz relocation support"
 
   depends_on "pkg-config" => :build
@@ -55,13 +48,15 @@ class Gtkx < Formula
   end
 
   def install
+    ENV.universal_binary if build.universal?
+
     args = ["--disable-dependency-tracking",
             "--disable-silent-rules",
             "--prefix=#{prefix}",
             "--disable-glibtest",
             "--enable-introspection=yes",
             "--with-gdktarget=quartz",
-            "--disable-visibility",]
+            "--disable-visibility"]
 
     args << "--enable-quartz-relocation" if build.with?("quartz-relocation")
 

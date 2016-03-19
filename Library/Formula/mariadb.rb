@@ -1,18 +1,14 @@
 class Mariadb < Formula
   desc "Drop-in replacement for MySQL"
   homepage "https://mariadb.org/"
-  url "http://ftp.osuosl.org/pub/mariadb/mariadb-10.1.8/source/mariadb-10.1.8.tar.gz"
-  sha256 "7cbf6a4649aa6dc9cd1dc24424ade7b994de78582ce4d47ca0f4cd1c4c003bfa"
+  url "http://ftp.osuosl.org/pub/mariadb/mariadb-10.1.12/source/mariadb-10.1.12.tar.gz"
+  sha256 "795f466ac0e4df148981b85df735855d41614abaedcda51520a513a4ad60f4e7"
 
   bottle do
-    sha256 "a369229d2063de79b1e1f55a69b4777b28160f66ddc276c8e94641e88a389780" => :el_capitan
-    sha256 "6a89f3dc372591100980b9999dd9b405f97c7da5b0a5c36a371a03cbd73d91d7" => :yosemite
-    sha256 "0dbf52e1cd9ff451957f102964fd52723127b01ebca656463f6e6d2fe6073647" => :mavericks
+    sha256 "71d70fbc1adb37bc29e0d2ad05192c83a8720f0e975707e4d1e5b0e0c8870c84" => :el_capitan
+    sha256 "e5e5e5498d55fb1d5590b281d9b230ac7bc5491baa61b503019fadcff07b898d" => :yosemite
+    sha256 "88c5877a4f0ef903698768dc3a8b6a4a62358ad6779160eb5433efd6b974e92d" => :mavericks
   end
-
-  # fix compilation failure with clang in mroonga storage engine
-  # https://mariadb.atlassian.net/projects/MDEV/issues/MDEV-8551
-  patch :DATA
 
   option :universal
   option "with-tests", "Keep test when installing"
@@ -34,6 +30,8 @@ class Mariadb < Formula
   conflicts_with "mysql-connector-c",
     :because => "both install MySQL client libraries"
   conflicts_with "mytop", :because => "both install `mytop` binaries"
+  conflicts_with "mariadb-connector-c",
+    :because => "both install plugins"
 
   def install
     # Don't hard-code the libtool path. See:
@@ -200,19 +198,3 @@ class Mariadb < Formula
     end
   end
 end
-__END__
-diff --git a/storage/mroonga/vendor/groonga/CMakeLists.txt b/storage/mroonga/vendor/groonga/CMakeLists.txt
-index ebe7f6b..609f77d 100644
---- a/storage/mroonga/vendor/groonga/CMakeLists.txt
-+++ b/storage/mroonga/vendor/groonga/CMakeLists.txt
-@@ -192,6 +192,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
-   check_build_flag("-Wno-clobbered")
- endif()
-
-+if(CMAKE_COMPILER_IS_CLANGCXX)
-+  MY_CHECK_AND_SET_COMPILER_FLAG("-fexceptions")
-+endif()
-+
- if(NOT DEFINED CMAKE_C_COMPILE_OPTIONS_PIC)
-   # For old CMake
-   if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGCXX)

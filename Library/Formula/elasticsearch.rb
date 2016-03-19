@@ -1,17 +1,16 @@
 class Elasticsearch < Formula
-  desc "Distributed real-time search & analytics engine for the cloud"
+  desc "Distributed search & analytics engine"
   homepage "https://www.elastic.co/products/elasticsearch"
-  url "https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.0.0/elasticsearch-2.0.0.tar.gz"
-  sha256 "b25f13f615337c2072964fd9fc5c7250f8a2a983b22198daf93548285d5d16df"
-  revision 1
-
-  bottle :unneeded
+  url "https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.2.1/elasticsearch-2.2.1.tar.gz"
+  sha256 "7d43d18a8ee8d715d827ed26b4ff3d939628f5a5b654c6e8de9d99bf3a9b2e03"
 
   head do
     url "https://github.com/elasticsearch/elasticsearch.git"
     depends_on :java => "1.8"
     depends_on "gradle" => :build
   end
+
+  bottle :unneeded
 
   depends_on :java => "1.7+"
 
@@ -33,7 +32,7 @@ class Elasticsearch < Formula
     rm_f Dir["bin/*.exe"]
 
     # Install everything else into package directory
-    libexec.install "bin", "config", "lib"
+    libexec.install "bin", "config", "lib", "modules"
 
     # Set up Elasticsearch for local development:
     inreplace "#{libexec}/config/elasticsearch.yml" do |s|
@@ -59,10 +58,10 @@ class Elasticsearch < Formula
 
     # Move config files into etc
     (etc/"elasticsearch").install Dir[libexec/"config/*"]
-    (etc/"elasticsearch/scripts").mkdir unless File.exists?(etc/"elasticsearch/scripts")
+    (etc/"elasticsearch/scripts").mkdir unless File.exist?(etc/"elasticsearch/scripts")
     (libexec/"config").rmtree
 
-    bin.write_exec_script Dir[libexec/"bin/*"]
+    bin.write_exec_script Dir[libexec/"bin/elasticsearch"]
   end
 
   def post_install
@@ -78,6 +77,7 @@ class Elasticsearch < Formula
     Logs:    #{var}/log/elasticsearch/#{cluster_name}.log
     Plugins: #{libexec}/plugins/
     Config:  #{etc}/elasticsearch/
+    plugin script: #{libexec}/bin/plugin
     EOS
   end
 
@@ -89,7 +89,7 @@ class Elasticsearch < Formula
       <plist version="1.0">
         <dict>
           <key>KeepAlive</key>
-          <true/>
+          <false/>
           <key>Label</key>
           <string>#{plist_name}</string>
           <key>ProgramArguments</key>
@@ -104,19 +104,20 @@ class Elasticsearch < Formula
           <key>WorkingDirectory</key>
           <string>#{var}</string>
           <key>StandardErrorPath</key>
-          <string>/dev/null</string>
+          <string>#{var}/log/elasticsearch.log</string>
           <key>StandardOutPath</key>
-          <string>/dev/null</string>
+          <string>#{var}/log/elasticsearch.log</string>
         </dict>
       </plist>
     EOS
   end
 
   test do
-    system "#{bin}/plugin", "list"
+    system "#{libexec}/bin/plugin", "list"
     pid = "#{testpath}/pid"
     begin
-      system "#{bin}/elasticsearch", "-d", "-p", pid, "--path.data", testpath
+      mkdir testpath/"config"
+      system "#{bin}/elasticsearch", "-d", "-p", pid, "--path.home", testpath
       sleep 10
       system "curl", "-XGET", "localhost:9200/"
     ensure

@@ -1,14 +1,14 @@
 class VertX < Formula
-  desc "Application platform for the JVM"
+  desc "Toolkit for building reactive applications on the JVM."
   homepage "http://vertx.io/"
-  url "https://dl.bintray.com/vertx/downloads/vert.x-3.1.0-full.tar.gz"
-  sha256 "292eadeb7df7e3947142b8860d0088b2bfecd83d81e1cb9c9b2e5e79fde5731b"
+  url "https://dl.bintray.com/vertx/downloads/vert.x-3.2.1-full.tar.gz"
+  sha256 "16e85a80e4f3c3eacf972953fbd36da21ba99b49cc39eda7760f1436ad8cb685"
 
   bottle :unneeded
 
   def install
     rm_f Dir["bin/*.bat"]
-    libexec.install %w[bin client conf lib]
+    libexec.install %w[bin conf lib]
     bin.install_symlink "#{libexec}/bin/vertx"
   end
 

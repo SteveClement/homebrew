@@ -4,20 +4,27 @@
 class Ngrok < Formula
   desc "Expose localhost to the internet and capture traffic for replay"
   homepage "https://ngrok.com"
-  head "https://github.com/inconshreveable/ngrok.git"
   url "https://github.com/inconshreveable/ngrok/archive/1.7.1.tar.gz"
   sha256 "ffb1ad90d5aa3c8b3a9bfd8109a71027645a78d5e61fccedd0873fee060da665"
+  revision 1
+
+  head "https://github.com/inconshreveable/ngrok.git"
 
   bottle do
     cellar :any_skip_relocation
-    sha256 "17bafe69834679e699086c4193d14f2ecfd09b67faa7689e313599d11f837860" => :el_capitan
-    sha256 "d626cc4d60628236e13c4a7e4e9f66f73b9a9d865178006fc16327c29ead2bbf" => :yosemite
-    sha256 "a4c522524765cdb27fe6b531c0694cad70bdf21bf42f4ded4a95e8822f2a482c" => :mavericks
-    sha256 "ede711ae53e7a26d249657461101a1cfb9c5cd7c3dc602e3091a2579a87b59aa" => :mountain_lion
+    revision 1
+    sha256 "56c524adac0a24f47400d369a330cfd55d4d46d04067296dc9bd18cf71180451" => :el_capitan
+    sha256 "48d055cb8bb673f5b4e48d80c76e2b59b6d5aae92bf7e1b3015f44c98fe42e1f" => :yosemite
+    sha256 "2c72dde1ebeb190c5d81bac44d66f98e11486a8f761ac73f796e798863cbfd35" => :mavericks
   end
 
   depends_on "go" => :build
   depends_on :hg => :build
+
+  patch do
+    url "https://github.com/inconshreveable/ngrok/commit/761e6d0de87f4175b91a007951d7ca4ab12b7d04.diff"
+    sha256 "1bfc6342e1c194a7763039de8d6a1a1c3783a30f0517473248e0fccb3c71c211"
+  end
 
   def install
     ENV.j1

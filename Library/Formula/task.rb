@@ -1,21 +1,23 @@
 class Task < Formula
   desc "Feature-rich console based todo list manager"
   homepage "https://taskwarrior.org/"
-  url "https://taskwarrior.org/download/task-2.5.0.tar.gz"
-  sha256 "4d8e67415a6993108c11b8eeef99b76a991af11b22874adbb7ae367e09334636"
-  head "https://git.tasktools.org/scm/tm/task.git", :branch => "2.5.1", :shallow => false
+  url "https://taskwarrior.org/download/task-2.5.1.tar.gz"
+  sha256 "d87bcee58106eb8a79b850e9abc153d98b79e00d50eade0d63917154984f2a15"
+
+  head "https://git.tasktools.org/scm/tm/task.git", :branch => "2.6.0", :shallow => false
 
   bottle do
-    revision 1
-    sha256 "b5215c6498e14ce80811d34ffcdeb0097e5ffe699f4bd93bc845e12cf9df3aa4" => :el_capitan
-    sha256 "026ac81ac65d3c34e7345e72d80c756521cfda7e19bb5148a7608bdab274d0ef" => :yosemite
-    sha256 "8651183eacf5d5c23a84d3593a67fb24a0dae92c03b6664d03ee0952b5eb6ae4" => :mavericks
+    sha256 "07aa2c19ae6d7a9a46b286bfc48fa970aa9a9e0237e034bbaab354dcfc4f6848" => :el_capitan
+    sha256 "113fc7ce057c51ea14021006a4106c25d29e361e4b70113e33fb7a83e57ee8d1" => :yosemite
+    sha256 "7888e42210edb6691ff57d056585536abd318d62b43a898bb98e286373519164" => :mavericks
   end
 
   option "without-gnutls", "Don't use gnutls; disables sync support"
 
   depends_on "cmake" => :build
   depends_on "gnutls" => :recommended
+
+  needs :cxx11
 
   def install
     args = std_cmake_args

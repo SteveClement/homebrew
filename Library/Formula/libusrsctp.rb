@@ -1,19 +1,21 @@
 class Libusrsctp < Formula
-  desc "User-land SCTP stack"
-  homepage "http://sctp.fh-muenster.de/sctp-user-land-stack.html"
-  url "http://sctp.fh-muenster.de/download/libusrsctp-0.9.1.tar.gz"
+  desc "A portable SCTP userland stack"
+  homepage "https://github.com/sctplab/usrsctp"
+  url "https://mirrorservice.org/sites/distfiles.macports.org/libusrsctp/libusrsctp-0.9.1.tar.gz"
+  mirror "https://mirror.csclub.uwaterloo.ca/MacPorts/mpdistfiles/libusrsctp/libusrsctp-0.9.1.tar.gz"
+  mirror "https://ftp.fau.de/macports/distfiles/libusrsctp/libusrsctp-0.9.1.tar.gz"
   sha256 "63a3abe5f1cb7ddde36cba09d32579b05a98badb06ff88fca87d024925c3ff16"
 
   bottle do
     cellar :any
-    revision 1
-    sha1 "5b540e94ed9273d09eba0e213014d2060cb27a0c" => :yosemite
-    sha1 "04778d2ae6555f8916eea463e70441de02665da0" => :mavericks
-    sha1 "b4c7f0a6851ce53f9d48091995bd523d4dbc7262" => :mountain_lion
+    revision 2
+    sha256 "bf05bbef72c45daec3f682b9c12a4ad838ad5c02e1814cbfa837e610140988a3" => :el_capitan
+    sha256 "7b681d68a1dca9792595dce4dc2d677e5a578ed5027dee6ba4dc312cd3f5119b" => :yosemite
+    sha256 "a42402bb65451da92fd33b86ba33a4c1f75d8931830437d866d5298f3c2818cf" => :mavericks
   end
 
   head do
-    url "http://sctp-refimpl.googlecode.com/svn/trunk/KERN/usrsctp"
+    url "https://github.com/sctplab/usrsctp.git"
 
     depends_on "autoconf" => :build
     depends_on "automake" => :build
